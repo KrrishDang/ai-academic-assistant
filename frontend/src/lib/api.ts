@@ -1,4 +1,8 @@
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
+
+console.log("VITE_API_BASE_URL =", import.meta.env.VITE_API_BASE_URL);
+console.log("apiBaseUrl =", apiBaseUrl);
 
 export { apiBaseUrl };
 
@@ -56,11 +60,16 @@ export function uploadPdf(
 
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
-        onProgress(Math.min(95, Math.round((event.loaded / event.total) * 100)));
+        onProgress(
+          Math.min(95, Math.round((event.loaded / event.total) * 100)),
+        );
       }
     });
     request.addEventListener("load", () => {
-      const payload = request.response as ProcessedPdf | { detail?: unknown } | null;
+      const payload = request.response as
+        | ProcessedPdf
+        | { detail?: unknown }
+        | null;
       if (request.status >= 200 && request.status < 300 && payload) {
         onProgress(100);
         resolve(payload as ProcessedPdf);
@@ -73,7 +82,11 @@ export function uploadPdf(
           errorMessage = payload.detail;
         } else if (Array.isArray(payload.detail)) {
           errorMessage = payload.detail
-            .map((d) => (typeof d === "object" && d !== null && "msg" in d ? d.msg : JSON.stringify(d)))
+            .map((d) =>
+              typeof d === "object" && d !== null && "msg" in d
+                ? d.msg
+                : JSON.stringify(d),
+            )
             .join(", ");
         } else {
           errorMessage = JSON.stringify(payload.detail);
@@ -84,7 +97,9 @@ export function uploadPdf(
       error.status = request.status;
       reject(error);
     });
-    request.addEventListener("error", () => reject(new Error("Network error during upload.")));
+    request.addEventListener("error", () =>
+      reject(new Error("Network error during upload.")),
+    );
     request.send(body);
   });
 }
@@ -104,7 +119,10 @@ export async function listDocuments(): Promise<DocumentResponse[]> {
 }
 
 /** Rename a document original filename. */
-export async function renameDocument(id: string, filename: string): Promise<DocumentResponse> {
+export async function renameDocument(
+  id: string,
+  filename: string,
+): Promise<DocumentResponse> {
   const response = await fetch(`${apiBaseUrl}/documents/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -146,11 +164,16 @@ export function replaceDocument(
 
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
-        onProgress(Math.min(95, Math.round((event.loaded / event.total) * 100)));
+        onProgress(
+          Math.min(95, Math.round((event.loaded / event.total) * 100)),
+        );
       }
     });
     request.addEventListener("load", () => {
-      const payload = request.response as DocumentResponse | { detail?: unknown } | null;
+      const payload = request.response as
+        | DocumentResponse
+        | { detail?: unknown }
+        | null;
       if (request.status >= 200 && request.status < 300 && payload) {
         onProgress(100);
         resolve(payload as DocumentResponse);
@@ -163,7 +186,11 @@ export function replaceDocument(
           errorMessage = payload.detail;
         } else if (Array.isArray(payload.detail)) {
           errorMessage = payload.detail
-            .map((d) => (typeof d === "object" && d !== null && "msg" in d ? d.msg : JSON.stringify(d)))
+            .map((d) =>
+              typeof d === "object" && d !== null && "msg" in d
+                ? d.msg
+                : JSON.stringify(d),
+            )
             .join(", ");
         } else {
           errorMessage = JSON.stringify(payload.detail);
@@ -174,7 +201,9 @@ export function replaceDocument(
       error.status = request.status;
       reject(error);
     });
-    request.addEventListener("error", () => reject(new Error("Network error during document replacement.")));
+    request.addEventListener("error", () =>
+      reject(new Error("Network error during document replacement.")),
+    );
     request.send(body);
   });
 }
@@ -203,7 +232,10 @@ export async function createConversation(
 }
 
 /** Rename an existing conversation's title. */
-export async function renameConversation(id: string, title: string): Promise<ConversationResponse> {
+export async function renameConversation(
+  id: string,
+  title: string,
+): Promise<ConversationResponse> {
   const response = await fetch(`${apiBaseUrl}/conversations/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -222,7 +254,9 @@ export async function deleteConversation(id: string): Promise<void> {
 }
 
 /** Get all messages in a conversation. */
-export async function getConversationMessages(id: string): Promise<MessageResponse[]> {
+export async function getConversationMessages(
+  id: string,
+): Promise<MessageResponse[]> {
   const response = await fetch(`${apiBaseUrl}/conversations/${id}/messages`, {
     headers: { "Content-Type": "application/json" },
   });
@@ -232,18 +266,21 @@ export async function getConversationMessages(id: string): Promise<MessageRespon
 
 /** Stream chat response inside a conversation. */
 export async function* chatInConversation(
-  conversationId: string, 
-  message: string, 
+  conversationId: string,
+  message: string,
   model?: string,
   temperature?: number,
-  signal?: AbortSignal
+  signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  const response = await fetch(`${apiBaseUrl}/conversations/${conversationId}/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, model, temperature }),
-    signal,
-  });
+  const response = await fetch(
+    `${apiBaseUrl}/conversations/${conversationId}/chat`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, model, temperature }),
+      signal,
+    },
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
@@ -268,11 +305,19 @@ export async function* chatInConversation(
 
       try {
         const payload = JSON.parse(data) as { text?: string; message?: string };
-        if (eventType === "delta" && payload.text) yield { type: "delta", text: payload.text };
-        if (eventType === "error") yield { type: "error", message: payload.message ?? "Generation failed." };
+        if (eventType === "delta" && payload.text)
+          yield { type: "delta", text: payload.text };
+        if (eventType === "error")
+          yield {
+            type: "error",
+            message: payload.message ?? "Generation failed.",
+          };
         if (eventType === "done") yield { type: "done" };
       } catch {
-        yield { type: "error", message: "Failed to parse generation event data." };
+        yield {
+          type: "error",
+          message: "Failed to parse generation event data.",
+        };
       }
     }
     if (done) break;
@@ -280,46 +325,74 @@ export async function* chatInConversation(
 }
 
 /** Request study material and yield the server-sent response as it arrives. */
-export async function* generateNotes(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateNotes(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/notes", extractedText, signal);
 }
 
 /** Request a streamed answer suitable for a five-mark exam question. */
-export async function* generateFiveMarkAnswer(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateFiveMarkAnswer(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/5-mark-answer", extractedText, signal);
 }
 
 /** Request a streamed answer suitable for a ten-mark exam question. */
-export async function* generateTenMarkAnswer(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateTenMarkAnswer(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/10-mark-answer", extractedText, signal);
 }
 
 /** Request streamed multiple-choice questions with answers. */
-export async function* generateMcqs(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateMcqs(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/mcqs", extractedText, signal);
 }
 
 /** Request streamed viva questions with concise expected answers. */
-export async function* generateVivaQuestions(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateVivaQuestions(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/viva-questions", extractedText, signal);
 }
 
 /** Request a streamed beginner-friendly explanation. */
-export async function* explainSimply(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* explainSimply(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/explain-simply", extractedText, signal);
 }
 
 /** Request streamed flashcards. */
-export async function* generateFlashcards(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateFlashcards(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/flashcards", extractedText, signal);
 }
 
 /** Request a streamed document summary. */
-export async function* generateSummary(extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+export async function* generateSummary(
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   yield* streamGeneration("/generate/summary", extractedText, signal);
 }
 
-async function* streamGeneration(path: string, extractedText: string, signal?: AbortSignal): AsyncGenerator<GenerationEvent> {
+async function* streamGeneration(
+  path: string,
+  extractedText: string,
+  signal?: AbortSignal,
+): AsyncGenerator<GenerationEvent> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -328,14 +401,20 @@ async function* streamGeneration(path: string, extractedText: string, signal?: A
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as { detail?: unknown } | null;
+    const payload = (await response.json().catch(() => null)) as {
+      detail?: unknown;
+    } | null;
     let errorMessage = "Generation request failed.";
     if (payload && typeof payload === "object" && "detail" in payload) {
       if (typeof payload.detail === "string") {
         errorMessage = payload.detail;
       } else if (Array.isArray(payload.detail)) {
         errorMessage = payload.detail
-          .map((d) => (typeof d === "object" && d !== null && "msg" in d ? d.msg : JSON.stringify(d)))
+          .map((d) =>
+            typeof d === "object" && d !== null && "msg" in d
+              ? d.msg
+              : JSON.stringify(d),
+          )
           .join(", ");
       } else {
         errorMessage = JSON.stringify(payload.detail);
@@ -343,7 +422,8 @@ async function* streamGeneration(path: string, extractedText: string, signal?: A
     }
     throw new Error(errorMessage);
   }
-  if (!response.body) throw new Error("The generation response did not include a stream.");
+  if (!response.body)
+    throw new Error("The generation response did not include a stream.");
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -362,11 +442,19 @@ async function* streamGeneration(path: string, extractedText: string, signal?: A
 
       try {
         const payload = JSON.parse(data) as { text?: string; message?: string };
-        if (eventType === "delta" && payload.text) yield { type: "delta", text: payload.text };
-        if (eventType === "error") yield { type: "error", message: payload.message ?? "Generation failed." };
+        if (eventType === "delta" && payload.text)
+          yield { type: "delta", text: payload.text };
+        if (eventType === "error")
+          yield {
+            type: "error",
+            message: payload.message ?? "Generation failed.",
+          };
         if (eventType === "done") yield { type: "done" };
       } catch {
-        yield { type: "error", message: "Failed to parse generation event data." };
+        yield {
+          type: "error",
+          message: "Failed to parse generation event data.",
+        };
       }
     }
     if (done) break;
@@ -382,12 +470,15 @@ export async function* editAndRegenerateMessage(
   temperature?: number,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  const response = await fetch(`${apiBaseUrl}/conversations/${conversationId}/edit-message/${messageId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, model, temperature }),
-    signal,
-  });
+  const response = await fetch(
+    `${apiBaseUrl}/conversations/${conversationId}/edit-message/${messageId}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, model, temperature }),
+      signal,
+    },
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
@@ -412,11 +503,19 @@ export async function* editAndRegenerateMessage(
 
       try {
         const payload = JSON.parse(data) as { text?: string; message?: string };
-        if (eventType === "delta" && payload.text) yield { type: "delta", text: payload.text };
-        if (eventType === "error") yield { type: "error", message: payload.message ?? "Generation failed." };
+        if (eventType === "delta" && payload.text)
+          yield { type: "delta", text: payload.text };
+        if (eventType === "error")
+          yield {
+            type: "error",
+            message: payload.message ?? "Generation failed.",
+          };
         if (eventType === "done") yield { type: "done" };
       } catch {
-        yield { type: "error", message: "Failed to parse generation event data." };
+        yield {
+          type: "error",
+          message: "Failed to parse generation event data.",
+        };
       }
     }
     if (done) break;
@@ -424,10 +523,16 @@ export async function* editAndRegenerateMessage(
 }
 
 /** Delete a specific message in a conversation. */
-export async function deleteMessage(conversationId: string, messageId: string): Promise<void> {
-  const response = await fetch(`${apiBaseUrl}/conversations/${conversationId}/messages/${messageId}`, {
-    method: "DELETE",
-  });
+export async function deleteMessage(
+  conversationId: string,
+  messageId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/conversations/${conversationId}/messages/${messageId}`,
+    {
+      method: "DELETE",
+    },
+  );
   if (!response.ok) throw new Error("Failed to delete message.");
 }
 
@@ -472,10 +577,15 @@ export type SearchResultsResponse = {
 };
 
 /** Perform global search across documents, conversations and message content. */
-export async function executeGlobalSearch(query: string): Promise<SearchResultsResponse> {
-  const response = await fetch(`${apiBaseUrl}/search?q=${encodeURIComponent(query)}`, {
-    headers: { "Content-Type": "application/json" },
-  });
+export async function executeGlobalSearch(
+  query: string,
+): Promise<SearchResultsResponse> {
+  const response = await fetch(
+    `${apiBaseUrl}/search?q=${encodeURIComponent(query)}`,
+    {
+      headers: { "Content-Type": "application/json" },
+    },
+  );
   if (!response.ok) throw new Error("Failed to execute search query.");
   return response.json();
 }
