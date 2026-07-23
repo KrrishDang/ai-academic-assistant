@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Catppuccin Mocha & Deep Red Premium Theme (Dark Mode Default) */
+    --background: 240 21% 9%; /* Crust #11111B */
+    --foreground: 226 64% 88%; /* Text #CDD6F4 */
+    --card: 240 21% 15%; /* Base #1E1E2E */
+    --card-foreground: 226 64% 88%;
+    --popover: 240 21% 12%; /* Mantle #181825 */
+    --popover-foreground: 226 64% 88%;
+    --primary: 0 72% 50%; /* Deep Red #DC2626 */
+    --primary-foreground: 226 64% 88%;
+    --secondary: 240 21% 12%; /* Mantle #181825 */
+    --secondary-foreground: 226 64% 88%;
+    --muted: 240 21% 12%;
+    --muted-foreground: 233 10% 47%; /* Muted #6C7086 */
+    --accent: 237 16% 23%; /* Borders #313244 */
+    --accent-foreground: 0 72% 50%;
+    --destructive: 343 81% 75%; /* Error #F38BA8 */
+    --destructive-foreground: 240 21% 9%;
+    --border: 237 16% 23%; /* Borders #313244 */
+    --input: 237 16% 23%;
+    --ring: 0 72% 50%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 21% 9%;
+    --foreground: 226 64% 88%;
+    --card: 240 21% 15%;
+    --card-foreground: 226 64% 88%;
+    --popover: 240 21% 12%;
+    --popover-foreground: 226 64% 88%;
+    --primary: 0 72% 50%;
+    --primary-foreground: 226 64% 88%;
+    --secondary: 240 21% 12%;
+    --secondary-foreground: 226 64% 88%;
+    --muted: 240 21% 12%;
+    --muted-foreground: 233 10% 47%;
+    --accent: 237 16% 23%;
+    --accent-foreground: 0 72% 50%;
+    --destructive: 343 81% 75%;
+    --destructive-foreground: 240 21% 9%;
+    --border: 237 16% 23%;
+    --input: 237 16% 23%;
+    --ring: 0 72% 50%;
+  }
+
+  * {
+    @apply border-border;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Theme switching color transitions — only on structural elements */
+  *:not(input):not(button):not(select):not(textarea):not(a) {
+    transition: background-color 150ms ease, 
+                border-color 150ms ease, 
+                color 150ms ease,
+                box-shadow 150ms ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'JetBrains Mono', monospace;
+    @apply tracking-tight font-extrabold;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(0, 72%, 50%, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(0, 72%, 50%, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  .dark body {
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(0, 72%, 50%, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(0, 72%, 50%, 0.04) 0px, transparent 50%);
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+}
+
+/* Custom premium animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  transform: translateX(-100%);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 20%,
+    rgba(255, 255, 255, 0.2) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+  content: '';
+}
+
+/* Minimalist Scrollbars matching Catppuccin styles */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--secondary));
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent));
+}
+
+/* Premium 3D Flippable Flashcards utilities */
+.perspective {
+  perspective: 1000px;
+}
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}

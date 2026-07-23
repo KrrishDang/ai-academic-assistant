@@ -1,0 +1,11 @@
+# Python Environment
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# Local data & environment secrets
+.env
+uploads/
+*.db
