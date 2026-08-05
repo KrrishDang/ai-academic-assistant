@@ -64,6 +64,13 @@ export function WorkspacePage() {
 
   const isFocusMode = location.search.includes("focus=true");
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const toggleFocusMode = () => {
     if (isFocusMode) {
@@ -403,10 +410,10 @@ export function WorkspacePage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-105px)] w-full relative">
+    <div className="flex flex-col lg:flex-row gap-5 h-auto lg:h-[calc(100vh-105px)] w-full relative overflow-x-hidden p-1 sm:p-0">
       {/* Left Panel: AI Tutor Chat */}
       <div className={cn(
-        "flex flex-col h-full border border-border/85 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg min-w-0 transition-all duration-300",
+        "flex flex-col h-[70vh] lg:h-full border border-border/85 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg min-w-0 transition-all duration-300",
         isFocusMode || !isRightPanelOpen ? "w-full flex-1" : "flex-1 lg:w-[78%] lg:flex-[78]"
       )}>
         {/* Header bar */}
@@ -711,19 +718,19 @@ export function WorkspacePage() {
         {!isFocusMode && isRightPanelOpen && (
           <motion.aside
             key="study-materials-drawer"
-            initial={{ opacity: 0, width: 0, scaleX: 0.95 }}
-            animate={{ opacity: 1, width: "22%", scaleX: 1 }}
-            exit={{ opacity: 0, width: 0, scaleX: 0.95 }}
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: isMobile ? "100%" : "22%" }}
+            exit={{ opacity: 0, width: 0 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            style={{ transformOrigin: "100% 50%" }}
-            className="w-full lg:w-[22%] lg:min-w-[260px] flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0 ml-auto"
+            style={{ transformOrigin: isMobile ? "center top" : "100% 50%" }}
+            className="w-full lg:w-[22%] lg:min-w-[250px] flex flex-col h-auto lg:h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0 lg:ml-auto"
           >
             <div className="border-b border-border/40 pb-2 flex items-center justify-between shrink-0">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Study Materials</h2>
               <span className="text-[10px] text-muted-foreground font-semibold">Saved locally</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div className="flex-1 overflow-y-auto max-h-[60vh] lg:max-h-none space-y-3 pr-1">
               {generationOptions.map((opt) => {
                 const activeKey = keyMap[opt.name];
                 const isGenerated = !!cachedResults?.[activeKey];
