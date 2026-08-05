@@ -132,8 +132,8 @@ export function SettingsPage() {
           </label>
           <div
             role="radiogroup"
-            aria-label="Color theme selection"
-            className="grid grid-cols-2 sm:grid-cols-5 gap-2.5"
+            aria-label="Catppuccin color theme selection"
+            className="grid grid-cols-2 sm:grid-cols-4 gap-3"
           >
             {availableThemes.map((t) => {
               const isActive = selectedThemeId === t.id;
