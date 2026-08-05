@@ -55,13 +55,13 @@ export const availableThemes: ThemeConfig[] = [
       secondary: "240 21% 12%", // Mantle #181825
       "secondary-foreground": "226 64% 88%",
       muted: "240 21% 12%",
-      "muted-foreground": "233 10% 47%", // Muted #6C7086
-      accent: "237 16% 23%", // Borders #313244
+      "muted-foreground": "233 10% 47%", // Overlay0 #6C7086
+      accent: "237 16% 23%", // Surface0 #313244
       "accent-foreground": "267 84% 81%", // Mauve #CBA6F7
-      destructive: "343 81% 75%", // Error #F38BA8
+      destructive: "343 81% 75%", // Red #F38BA8
       "destructive-foreground": "240 21% 9%",
       border: "237 16% 23%",
-      input: "237 16% 23%",
+      input: "235 13% 31%", // Surface1 #45475A
       ring: "267 84% 81%"
     }
   },
@@ -70,23 +70,23 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Macchiato",
     type: "dark",
     variables: {
-      background: "240 19% 14%",
-      foreground: "227 70% 87%",
-      card: "240 19% 18%",
-      "card-foreground": "227 70% 87%",
-      primary: "351 74% 63%",
-      "primary-foreground": "240 19% 14%",
-      secondary: "240 19% 16%",
-      "secondary-foreground": "227 70% 87%",
-      muted: "240 19% 16%",
-      "muted-foreground": "230 13% 55%",
-      accent: "238 21% 27%",
-      "accent-foreground": "351 74% 63%",
-      destructive: "351 74% 63%",
-      "destructive-foreground": "240 19% 14%",
-      border: "238 21% 27%",
-      input: "238 21% 27%",
-      ring: "351 74% 63%"
+      background: "236 23% 12%", // Crust #181926
+      foreground: "227 70% 88%", // Text #CAD3F5
+      card: "232 23% 18%", // Base #24273A
+      "card-foreground": "227 70% 88%",
+      primary: "267 83% 80%", // Mauve #C6A0F6
+      "primary-foreground": "236 23% 12%", // Crust #181926
+      secondary: "233 23% 15%", // Mantle #1E2030
+      "secondary-foreground": "227 70% 88%",
+      muted: "233 23% 15%",
+      "muted-foreground": "230 12% 49%", // Overlay0 #6E738D
+      accent: "230 19% 26%", // Surface0 #363A4F
+      "accent-foreground": "267 83% 80%", // Mauve #C6A0F6
+      destructive: "351 74% 73%", // Red #ED8796
+      "destructive-foreground": "236 23% 12%",
+      border: "230 19% 26%",
+      input: "231 16% 34%", // Surface1 #494D64
+      ring: "267 83% 80%"
     }
   },
   {
@@ -94,23 +94,23 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Frappé",
     type: "dark",
     variables: {
-      background: "230 19% 20%",
-      foreground: "226 64% 88%",
-      card: "231 19% 26%",
-      "card-foreground": "226 64% 88%",
-      primary: "353 80% 68%",
-      "primary-foreground": "230 19% 20%",
-      secondary: "230 19% 23%",
-      "secondary-foreground": "226 64% 88%",
-      muted: "230 19% 23%",
-      "muted-foreground": "228 11% 58%",
-      accent: "232 16% 35%",
-      "accent-foreground": "353 80% 68%",
-      destructive: "353 80% 68%",
-      "destructive-foreground": "230 19% 20%",
-      border: "232 16% 35%",
-      input: "232 16% 35%",
-      ring: "353 80% 68%"
+      background: "229 20% 17%", // Crust #232634
+      foreground: "227 70% 87%", // Text #C6D0F5
+      card: "229 19% 23%", // Base #303446
+      "card-foreground": "227 70% 87%",
+      primary: "277 59% 76%", // Mauve #CA9EE6
+      "primary-foreground": "229 20% 17%", // Crust #232634
+      secondary: "231 19% 20%", // Mantle #292C3C
+      "secondary-foreground": "227 70% 87%",
+      muted: "231 19% 20%",
+      "muted-foreground": "229 13% 52%", // Overlay0 #737994
+      accent: "230 16% 30%", // Surface0 #414559
+      "accent-foreground": "277 59% 76%", // Mauve #CA9EE6
+      destructive: "359 68% 71%", // Red #E78284
+      "destructive-foreground": "229 20% 17%",
+      border: "230 16% 30%",
+      input: "227 15% 37%", // Surface1 #51576D
+      ring: "277 59% 76%"
     }
   },
   {
@@ -118,23 +118,23 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Latte",
     type: "light",
     variables: {
-      background: "220 23% 95%",
-      foreground: "234 16% 25%",
-      card: "0 0% 100%",
-      "card-foreground": "234 16% 25%",
-      primary: "349 71% 52%", // Red
+      background: "220 23% 95%", // Base #EFF1F5
+      foreground: "234 16% 35%", // Text #4C4F69
+      card: "0 0% 100%", // Base White
+      "card-foreground": "234 16% 35%",
+      primary: "266 85% 58%", // Mauve #8839EF
       "primary-foreground": "0 0% 100%",
-      secondary: "220 22% 92%",
-      "secondary-foreground": "234 16% 25%",
+      secondary: "220 22% 92%", // Mantle #E6E9EF
+      "secondary-foreground": "234 16% 35%",
       muted: "220 22% 92%",
-      "muted-foreground": "231 10% 50%",
-      accent: "223 16% 83%",
-      "accent-foreground": "349 71% 52%",
-      destructive: "349 71% 52%",
+      "muted-foreground": "228 11% 65%", // Overlay0 #9CA0B0
+      accent: "223 16% 83%", // Surface0 #CCD0DA
+      "accent-foreground": "266 85% 58%", // Mauve #8839EF
+      destructive: "347 87% 44%", // Red #D20F39
       "destructive-foreground": "0 0% 100%",
       border: "223 16% 83%",
-      input: "223 16% 83%",
-      ring: "349 71% 52%"
+      input: "225 14% 77%", // Surface1 #BCC0CC
+      ring: "266 85% 58%"
     }
   }
 ];
