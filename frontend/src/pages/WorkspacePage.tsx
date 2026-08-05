@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useConversations } from "@/features/conversations/ConversationContext";
@@ -174,42 +174,62 @@ export function WorkspacePage() {
     loadSavedResults();
   }, [linkedDoc]);
 
-  // ── Smart auto-scroll ─────────────────────────────────────────
-  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
-    messagesEndRef.current?.scrollIntoView({ behavior });
+  // ── Smart Chat Auto-Scroll System ──────────────────────────────
+  const prevConversationId = useRef<string | null>(null);
+
+  const scrollToBottom = useCallback((smooth = false) => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    if (smooth) {
+      container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
   }, []);
 
-  // Track if user manually scrolled up or returned near bottom
   const handleChatScroll = useCallback(() => {
     const container = chatContainerRef.current;
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    // Set scrolled up flag if user is more than 100px away from bottom; resume if <= 100px
-    userHasScrolledUp.current = distanceFromBottom > 100;
+    // Resume auto-scroll when within 80px of bottom, pause when scrolled higher
+    userHasScrolledUp.current = distanceFromBottom > 80;
   }, []);
 
-  // When changing conversations, reset scroll state
-  useEffect(() => {
-    userHasScrolledUp.current = false;
-  }, [activeConversation?.id]);
+  // 1. Initial Load & Conversation Switching: Scroll to bottom immediately with zero flickering
+  useLayoutEffect(() => {
+    if (messagesLoading) return;
+    const isNewConversation = prevConversationId.current !== activeConversation?.id;
+    prevConversationId.current = activeConversation?.id || null;
 
-  // Auto-scroll on new messages & during streaming
-  useEffect(() => {
-    if ((messages.length > prevMessagesLength.current || isGenerating) && !userHasScrolledUp.current) {
-      scrollToBottom("smooth");
+    if (isNewConversation || messages.length > 0) {
+      userHasScrolledUp.current = false;
+      scrollToBottom(false);
+      inputRef.current?.focus();
     }
-    prevMessagesLength.current = messages.length;
-  }, [messages.length, isGenerating, scrollToBottom]);
+  }, [activeConversation?.id, messagesLoading, scrollToBottom]);
 
-  // Scroll to bottom and focus input when conversation finishes loading
-  useEffect(() => {
-    if (!messagesLoading && messages.length > 0) {
-      requestAnimationFrame(() => {
-        scrollToBottom("smooth");
-        inputRef.current?.focus();
-      });
+  // 2. Streaming & New Messages: Keep bottom pinned unless user scrolled up
+  useLayoutEffect(() => {
+    if (messagesLoading) return;
+    if (!userHasScrolledUp.current && (isGenerating || messages.length > 0)) {
+      scrollToBottom(false);
     }
-  }, [messagesLoading, activeConversation?.id, scrollToBottom]);
+  }, [messages, isGenerating, messagesLoading, scrollToBottom]);
+
+  // 3. Focus Mode & Window Resize: Maintain scroll position on layout change
+  useEffect(() => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+
+    const observer = new ResizeObserver(() => {
+      if (!userHasScrolledUp.current) {
+        container.scrollTop = container.scrollHeight;
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isFocusMode]);
 
   async function generateResource(name: string, fn: any) {
     if (!linkedDoc) return;
@@ -245,8 +265,10 @@ export function WorkspacePage() {
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isGenerating || messagesLoading) return;
+    userHasScrolledUp.current = false;
     sendChatMessage(prompt.trim());
     setPrompt("");
+    scrollToBottom(false);
   };
 
   const handleCopy = (id: string, text: string) => {
