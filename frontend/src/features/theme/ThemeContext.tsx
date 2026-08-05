@@ -48,19 +48,19 @@ export const availableThemes: ThemeConfig[] = [
       foreground: "226 64% 88%", // Text #CDD6F4
       card: "240 21% 15%", // Base #1E1E2E
       "card-foreground": "226 64% 88%",
-      primary: "0 72% 50%", // Deep Red #DC2626
-      "primary-foreground": "226 64% 88%",
+      primary: "267 84% 81%", // Mauve #CBA6F7
+      "primary-foreground": "240 21% 9%", // Crust #11111B
       secondary: "240 21% 12%", // Mantle #181825
       "secondary-foreground": "226 64% 88%",
       muted: "240 21% 12%",
       "muted-foreground": "233 10% 47%", // Muted #6C7086
       accent: "237 16% 23%", // Borders #313244
-      "accent-foreground": "0 72% 50%",
+      "accent-foreground": "267 84% 81%", // Mauve #CBA6F7
       destructive: "343 81% 75%", // Error #F38BA8
       "destructive-foreground": "240 21% 9%",
       border: "237 16% 23%",
       input: "237 16% 23%",
-      ring: "0 72% 50%"
+      ring: "267 84% 81%"
     }
   },
   {
