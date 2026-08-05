@@ -58,6 +58,10 @@ export function WorkspacePage() {
 
   const [prompt, setPrompt] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const userHasScrolledUp = useRef(false);
+  const prevMessagesLength = useRef(0);
 
   // Message Actions state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -153,17 +157,46 @@ export function WorkspacePage() {
     loadSavedResults();
   }, [linkedDoc]);
 
-  // Redirect to dashboard if no active workspace session
-  useEffect(() => {
-    if (!activeConversation) {
-      navigate("/");
-    }
-  }, [activeConversation, navigate]);
+  // ── Smart auto-scroll ─────────────────────────────────────────
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
 
-  // Scroll to bottom of chat
+  // Track if user manually scrolled up
+  const handleChatScroll = () => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    userHasScrolledUp.current = distanceFromBottom > 120;
+  };
+
+  // Auto-scroll on new messages (unless user scrolled up)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length > prevMessagesLength.current) {
+      if (!userHasScrolledUp.current) {
+        scrollToBottom();
+      }
+    }
+    prevMessagesLength.current = messages.length;
+  }, [messages.length]);
+
+  // Always scroll during streaming generation
+  useEffect(() => {
+    if (isGenerating && !userHasScrolledUp.current) {
+      scrollToBottom();
+    }
   }, [messages, isGenerating]);
+
+  // Scroll to bottom and focus input when conversation loads
+  useEffect(() => {
+    if (!messagesLoading && messages.length > 0) {
+      // Use requestAnimationFrame to ensure DOM has rendered
+      requestAnimationFrame(() => {
+        scrollToBottom("instant" as ScrollBehavior);
+        inputRef.current?.focus();
+      });
+    }
+  }, [messagesLoading, activeConversation?.id]);
 
   async function generateResource(name: string, fn: any) {
     if (!linkedDoc) return;
@@ -301,8 +334,37 @@ export function WorkspacePage() {
     }
   }
 
-  if (!activeConversation || !linkedDoc) {
-    return null;
+  // ── No active session — show helpful fallback, never blank ──
+  if (!activeConversation) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="max-w-sm text-center space-y-4 p-8 bg-card border border-border/60 rounded-2xl">
+          <div className="text-4xl">📄</div>
+          <h2 className="text-lg font-extrabold tracking-tight">No Document Open</h2>
+          <p className="text-xs text-muted-foreground font-medium leading-relaxed">
+            Select a document from the dashboard to start studying with the AI Tutor.
+          </p>
+          <Button
+            onClick={() => navigate("/")}
+            className="h-9 px-5 text-xs font-bold"
+          >
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Documents still loading — show skeleton ──
+  if (!linkedDoc) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 size={28} className="animate-spin text-primary" />
+          <p className="text-xs text-muted-foreground font-semibold">Loading workspace...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -364,7 +426,11 @@ export function WorkspacePage() {
         </header>
 
         {/* Conversation history block */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div
+          ref={chatContainerRef}
+          onScroll={handleChatScroll}
+          className="flex-1 overflow-y-auto p-5 space-y-4"
+        >
           {messagesLoading ? (
             <div className="flex flex-col items-center justify-center h-full space-y-2">
               <Loader2 size={24} className="animate-spin text-primary" />
@@ -522,13 +588,14 @@ export function WorkspacePage() {
           {/* Chat Form */}
           <form onSubmit={handleSend} className="flex gap-2">
             <input
+              ref={inputRef}
               type="text"
               required
               value={prompt}
               disabled={isGenerating || messagesLoading}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder="Ask anything about this document..."
-              className="flex-1 h-10 rounded-lg border border-input bg-background/50 px-3.5 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 h-10 rounded-lg border border-input bg-background px-3.5 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <Button 
               type="submit" 

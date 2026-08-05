@@ -35,12 +35,21 @@ const ConversationContext = createContext<ConversationContextType | undefined>(u
 
 export function ConversationProvider({ children }: { children: React.ReactNode }) {
   const [conversations, setConversations] = useState<ConversationResponse[]>([]);
-  const [activeConversation, setActiveConversation] = useState<ConversationResponse | null>(null);
+  const [activeConversation, setActiveConversation] = useState<ConversationResponse | null>(() => {
+    // Restore from sessionStorage if available
+    try {
+      const stored = sessionStorage.getItem("activeConversation");
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [messages, setMessages] = useState<MessageResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -62,12 +71,43 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
     fetchConversations();
   }, [fetchConversations]);
 
+  // Restore messages from cache when activeConversation is restored from sessionStorage
+  useEffect(() => {
+    if (activeConversation && messages.length === 0 && !messagesLoading && !isRestoring) {
+      setIsRestoring(true);
+      (async () => {
+        setMessagesLoading(true);
+        try {
+          // Try local cache first for instant render
+          if (activeConversation.document_id) {
+            const cached = await getChatHistory(activeConversation.document_id);
+            if (cached && cached.length > 0) {
+              setMessages(cached);
+            }
+          }
+          // Then try API
+          const msgs = await getConversationMessages(activeConversation.id);
+          setMessages(msgs);
+          if (activeConversation.document_id) {
+            await saveChatHistory(activeConversation.document_id, msgs);
+          }
+        } catch {
+          // Keep cached messages if API fails
+        } finally {
+          setMessagesLoading(false);
+          setIsRestoring(false);
+        }
+      })();
+    }
+  }, [activeConversation?.id]); // Only run when conversation ID changes
+
   const createNewConversation = async (documentId: string | null, title?: string) => {
     setError(null);
     try {
       const newConv = await createConversation(documentId, title);
       setConversations((prev) => [newConv, ...prev]);
       setActiveConversation(newConv);
+      sessionStorage.setItem("activeConversation", JSON.stringify(newConv));
       setMessages([]);
       return newConv;
     } catch (err) {
@@ -105,6 +145,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 
   const selectConversation = async (conv: ConversationResponse) => {
     setActiveConversation(conv);
+    sessionStorage.setItem("activeConversation", JSON.stringify(conv));
     setMessagesLoading(true);
     setError(null);
     try {
@@ -307,6 +348,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 
   const clearActiveConversation = useCallback(() => {
     setActiveConversation(null);
+    sessionStorage.removeItem("activeConversation");
     setMessages([]);
   }, []);
 
