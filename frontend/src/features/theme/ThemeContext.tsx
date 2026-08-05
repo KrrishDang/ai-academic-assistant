@@ -46,13 +46,13 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Mocha",
     type: "dark",
     variables: {
-      background: "240 21% 9%", // Crust #11111B
+      background: "240 21% 15%", // Base #1E1E2E
       foreground: "226 64% 88%", // Text #CDD6F4
-      card: "240 21% 15%", // Base #1E1E2E
+      card: "240 21% 12%", // Mantle #181825
       "card-foreground": "226 64% 88%",
       primary: "267 84% 81%", // Mauve #CBA6F7
       "primary-foreground": "240 21% 9%", // Crust #11111B
-      secondary: "240 21% 12%", // Mantle #181825
+      secondary: "240 21% 9%", // Crust #11111B
       "secondary-foreground": "226 64% 88%",
       muted: "240 21% 12%",
       "muted-foreground": "233 10% 47%", // Overlay0 #6C7086
@@ -70,13 +70,13 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Macchiato",
     type: "dark",
     variables: {
-      background: "236 23% 12%", // Crust #181926
+      background: "232 23% 18%", // Base #24273A
       foreground: "227 70% 88%", // Text #CAD3F5
-      card: "232 23% 18%", // Base #24273A
+      card: "233 23% 15%", // Mantle #1E2030
       "card-foreground": "227 70% 88%",
       primary: "267 83% 80%", // Mauve #C6A0F6
       "primary-foreground": "236 23% 12%", // Crust #181926
-      secondary: "233 23% 15%", // Mantle #1E2030
+      secondary: "236 23% 12%", // Crust #181926
       "secondary-foreground": "227 70% 88%",
       muted: "233 23% 15%",
       "muted-foreground": "230 12% 49%", // Overlay0 #6E738D
@@ -94,13 +94,13 @@ export const availableThemes: ThemeConfig[] = [
     name: "Catppuccin Frappé",
     type: "dark",
     variables: {
-      background: "229 20% 17%", // Crust #232634
+      background: "229 19% 23%", // Base #303446
       foreground: "227 70% 87%", // Text #C6D0F5
-      card: "229 19% 23%", // Base #303446
+      card: "231 19% 20%", // Mantle #292C3C
       "card-foreground": "227 70% 87%",
       primary: "277 59% 76%", // Mauve #CA9EE6
       "primary-foreground": "229 20% 17%", // Crust #232634
-      secondary: "231 19% 20%", // Mantle #292C3C
+      secondary: "229 20% 17%", // Crust #232634
       "secondary-foreground": "227 70% 87%",
       muted: "231 19% 20%",
       "muted-foreground": "229 13% 52%", // Overlay0 #737994
@@ -120,11 +120,11 @@ export const availableThemes: ThemeConfig[] = [
     variables: {
       background: "220 23% 95%", // Base #EFF1F5
       foreground: "234 16% 35%", // Text #4C4F69
-      card: "0 0% 100%", // Base White
+      card: "220 22% 92%", // Mantle #E6E9EF
       "card-foreground": "234 16% 35%",
       primary: "266 85% 58%", // Mauve #8839EF
       "primary-foreground": "0 0% 100%",
-      secondary: "220 22% 92%", // Mantle #E6E9EF
+      secondary: "220 21% 89%", // Crust #DCE0E8
       "secondary-foreground": "234 16% 35%",
       muted: "220 22% 92%",
       "muted-foreground": "228 11% 65%", // Overlay0 #9CA0B0
@@ -144,8 +144,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (localStorage.getItem("settings_theme_mode") as ThemeMode) || "system";
   });
 
-  const [selectedThemeId, setSelectedThemeIdState] = useState<string | null>(() => {
-    return localStorage.getItem("settings_theme_id") || null;
+  const [selectedThemeId, setSelectedThemeIdState] = useState<string>(() => {
+    return localStorage.getItem("settings_theme_id") || "catppuccin-mocha";
   });
 
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
