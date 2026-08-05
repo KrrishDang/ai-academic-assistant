@@ -7,7 +7,7 @@ import dotenv
 # Force-load local environment variables, overriding conflicting system environment variables
 dotenv.load_dotenv(override=True)
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,8 +34,11 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     log_level: str = "INFO"
     session_secret: str = "generate-a-secure-secret-key-here"
-    google_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-3.6-flash"
+    google_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GOOGLE_API_KEY", "GEMINI_API_KEY"),
+    )
+    gemini_model: str = "gemini-2.5-flash"
     gemini_timeout_seconds: float = Field(default=45.0, gt=0)
     gemini_max_retries: int = Field(default=3, ge=0, le=5)
     upload_dir: str = "uploads"
