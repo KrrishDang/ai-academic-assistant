@@ -9,7 +9,7 @@ import {
   FileText,
   Search,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -79,8 +79,19 @@ function Navigation({ onNavigate, isCollapsed = false }: NavigationProps) {
 export function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
   const { documents } = useDocuments();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
@@ -293,11 +304,11 @@ export function AppLayout() {
 
       {/* ── Main Content ─────────────────────────────────────────── */}
       <motion.main
-        animate={{ paddingLeft: isCollapsed ? 72 : 256 }}
+        animate={{ paddingLeft: isMobile ? 0 : isCollapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="flex-1 min-h-screen md:pl-0 flex flex-col"
+        className="flex-1 min-h-screen flex flex-col w-full"
       >
-        <div className="flex-1 w-full max-w-5xl mx-auto p-5 sm:p-8 md:p-10 lg:p-12">
+        <div className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 md:p-10 lg:p-12">
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

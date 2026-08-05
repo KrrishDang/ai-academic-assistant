@@ -217,7 +217,7 @@ export function DashboardPage() {
             <Card
               key={doc.id}
               onClick={() => handleSelectDoc(doc)}
-              className="hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-200 bg-card shadow-sm hover:shadow-md border border-border/60 rounded-xl flex flex-col justify-between p-5 h-[200px] group relative overflow-hidden"
+              className="hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-200 bg-card shadow-sm hover:shadow-md border border-border/60 rounded-xl flex flex-col justify-between p-4 sm:p-5 h-[200px] group relative overflow-hidden"
             >
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -259,21 +259,21 @@ export function DashboardPage() {
 
               {/* Footer actions */}
               <div
-                className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-2"
+                className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-1.5 sm:gap-2"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                   <Button
                     onClick={() => handleSelectDoc(doc)}
                     variant="outline"
-                    className="h-7 px-2.5 text-[10px] font-bold border-border/50 text-muted-foreground hover:text-foreground active:scale-[0.98]"
+                    className="h-7 px-2 sm:px-2.5 text-[10px] font-bold border-border/50 text-muted-foreground hover:text-foreground active:scale-[0.98]"
                   >
                     Open Resources
                   </Button>
                   <Button
                     onClick={(e) => handleDeleteDoc(e, doc.id)}
                     variant="outline"
-                    className="h-7 w-7 p-0 flex items-center justify-center border-border/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.98]"
+                    className="h-7 w-7 p-0 flex items-center justify-center border-border/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.98] shrink-0"
                     title="Delete document"
                   >
                     <Trash2 size={11} />
@@ -282,7 +282,7 @@ export function DashboardPage() {
 
                 <Button
                   onClick={() => handleSelectDoc(doc)}
-                  className="h-7 px-3 text-[10px] font-bold flex items-center gap-1 active:scale-[0.98]"
+                  className="h-7 px-2.5 sm:px-3 text-[10px] font-bold flex items-center gap-1 active:scale-[0.98] shrink-0"
                 >
                   <span>Open AI Tutor</span>
                   <ArrowRight size={10} />
