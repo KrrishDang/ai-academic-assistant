@@ -188,6 +188,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
     localStorage.setItem("settings_theme_mode", mode);
+
+    if (mode === "light") {
+      setSelectedThemeIdState("catppuccin-latte");
+      localStorage.setItem("settings_theme_id", "catppuccin-latte");
+    } else if (mode === "dark") {
+      if (!selectedThemeId || selectedThemeId === "catppuccin-latte") {
+        setSelectedThemeIdState("catppuccin-mocha");
+        localStorage.setItem("settings_theme_id", "catppuccin-mocha");
+      }
+    } else if (mode === "system") {
+      setSelectedThemeIdState(null);
+      localStorage.removeItem("settings_theme_id");
+    }
   };
 
   const setSelectedThemeId = (themeId: string) => {
