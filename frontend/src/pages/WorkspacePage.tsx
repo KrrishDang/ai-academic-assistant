@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useConversations } from "@/features/conversations/ConversationContext";
@@ -158,45 +158,41 @@ export function WorkspacePage() {
   }, [linkedDoc]);
 
   // ── Smart auto-scroll ─────────────────────────────────────────
-  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     messagesEndRef.current?.scrollIntoView({ behavior });
-  };
+  }, []);
 
-  // Track if user manually scrolled up
-  const handleChatScroll = () => {
+  // Track if user manually scrolled up or returned near bottom
+  const handleChatScroll = useCallback(() => {
     const container = chatContainerRef.current;
     if (!container) return;
     const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
-    userHasScrolledUp.current = distanceFromBottom > 120;
-  };
+    // Set scrolled up flag if user is more than 100px away from bottom; resume if <= 100px
+    userHasScrolledUp.current = distanceFromBottom > 100;
+  }, []);
 
-  // Auto-scroll on new messages (unless user scrolled up)
+  // When changing conversations, reset scroll state
   useEffect(() => {
-    if (messages.length > prevMessagesLength.current) {
-      if (!userHasScrolledUp.current) {
-        scrollToBottom();
-      }
+    userHasScrolledUp.current = false;
+  }, [activeConversation?.id]);
+
+  // Auto-scroll on new messages & during streaming
+  useEffect(() => {
+    if ((messages.length > prevMessagesLength.current || isGenerating) && !userHasScrolledUp.current) {
+      scrollToBottom("smooth");
     }
     prevMessagesLength.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, isGenerating, scrollToBottom]);
 
-  // Always scroll during streaming generation
-  useEffect(() => {
-    if (isGenerating && !userHasScrolledUp.current) {
-      scrollToBottom();
-    }
-  }, [messages, isGenerating]);
-
-  // Scroll to bottom and focus input when conversation loads
+  // Scroll to bottom and focus input when conversation finishes loading
   useEffect(() => {
     if (!messagesLoading && messages.length > 0) {
-      // Use requestAnimationFrame to ensure DOM has rendered
       requestAnimationFrame(() => {
-        scrollToBottom("instant" as ScrollBehavior);
+        scrollToBottom("smooth");
         inputRef.current?.focus();
       });
     }
-  }, [messagesLoading, activeConversation?.id]);
+  }, [messagesLoading, activeConversation?.id, scrollToBottom]);
 
   async function generateResource(name: string, fn: any) {
     if (!linkedDoc) return;

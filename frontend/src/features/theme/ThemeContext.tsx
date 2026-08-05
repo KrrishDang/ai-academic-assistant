@@ -64,6 +64,54 @@ export const availableThemes: ThemeConfig[] = [
     }
   },
   {
+    id: "catppuccin-macchiato",
+    name: "Catppuccin Macchiato",
+    type: "dark",
+    variables: {
+      background: "240 19% 14%",
+      foreground: "227 70% 87%",
+      card: "240 19% 18%",
+      "card-foreground": "227 70% 87%",
+      primary: "351 74% 63%",
+      "primary-foreground": "240 19% 14%",
+      secondary: "240 19% 16%",
+      "secondary-foreground": "227 70% 87%",
+      muted: "240 19% 16%",
+      "muted-foreground": "230 13% 55%",
+      accent: "238 21% 27%",
+      "accent-foreground": "351 74% 63%",
+      destructive: "351 74% 63%",
+      "destructive-foreground": "240 19% 14%",
+      border: "238 21% 27%",
+      input: "238 21% 27%",
+      ring: "351 74% 63%"
+    }
+  },
+  {
+    id: "catppuccin-frappe",
+    name: "Catppuccin Frappé",
+    type: "dark",
+    variables: {
+      background: "230 19% 20%",
+      foreground: "226 64% 88%",
+      card: "231 19% 26%",
+      "card-foreground": "226 64% 88%",
+      primary: "353 80% 68%",
+      "primary-foreground": "230 19% 20%",
+      secondary: "230 19% 23%",
+      "secondary-foreground": "226 64% 88%",
+      muted: "230 19% 23%",
+      "muted-foreground": "228 11% 58%",
+      accent: "232 16% 35%",
+      "accent-foreground": "353 80% 68%",
+      destructive: "353 80% 68%",
+      "destructive-foreground": "230 19% 20%",
+      border: "232 16% 35%",
+      input: "232 16% 35%",
+      ring: "353 80% 68%"
+    }
+  },
+  {
     id: "vercel-dark",
     name: "Vercel Dark",
     type: "dark",
@@ -345,6 +393,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     Object.entries(currentActiveTheme.variables).forEach(([key, val]) => {
       root.style.setProperty(`--${key}`, val);
     });
+
+    root.style.setProperty("color-scheme", currentActiveTheme.type);
 
     if (currentActiveTheme.type === "dark") {
       root.classList.add("dark");

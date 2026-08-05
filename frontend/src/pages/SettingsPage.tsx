@@ -89,19 +89,27 @@ export function SettingsPage() {
           <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Mode
           </label>
-          <div className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-0.5">
+          <div
+            role="radiogroup"
+            aria-label="Display mode selection"
+            className="inline-flex rounded-lg border border-border/60 bg-muted/30 p-0.5"
+          >
             {modeOptions.map(({ value, label, icon: Icon }) => {
               const isActive = themeMode === value;
               return (
                 <button
                   key={value}
                   type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  aria-label={`${label} mode`}
                   onClick={() => {
                     setThemeMode(value);
                     triggerSave();
                   }}
                   className={`
                     relative flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-md transition-all duration-150
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
                     ${
                       isActive
                         ? "bg-card text-foreground shadow-sm"
@@ -109,7 +117,7 @@ export function SettingsPage() {
                     }
                   `}
                 >
-                  <Icon size={13} />
+                  <Icon size={13} aria-hidden="true" />
                   {label}
                 </button>
               );
@@ -122,7 +130,11 @@ export function SettingsPage() {
           <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
             Theme
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div
+            role="radiogroup"
+            aria-label="Color theme selection"
+            className="grid grid-cols-2 sm:grid-cols-5 gap-2.5"
+          >
             {availableThemes.map((t) => {
               const isActive = selectedThemeId === t.id;
               const bgHsl = `hsl(${t.variables.background})`;
@@ -134,6 +146,9 @@ export function SettingsPage() {
                 <button
                   key={t.id}
                   type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  aria-label={`${t.name} theme`}
                   onClick={() => {
                     setSelectedThemeId(t.id);
                     triggerSave();
@@ -142,6 +157,7 @@ export function SettingsPage() {
                     relative p-2 rounded-xl border flex flex-col items-center text-center gap-1.5
                     transition-all duration-150 cursor-pointer
                     hover:scale-[1.02] hover:shadow-md
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
                     ${
                       isActive
                         ? "border-[#b4befe] shadow-[0_0_12px_-3px_rgba(180,190,254,0.35)] bg-[#b4befe]/[0.06]"
