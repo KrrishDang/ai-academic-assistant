@@ -707,16 +707,16 @@ export function WorkspacePage() {
       </div>
 
       {/* Right Panel: Study Materials Drawer Panel */}
-      <AnimatePresence>
+      <AnimatePresence initial={false}>
         {!isFocusMode && isRightPanelOpen && (
           <motion.aside
             key="study-materials-drawer"
-            initial={{ opacity: 0, scaleX: 0 }}
-            animate={{ opacity: 1, scaleX: 1 }}
-            exit={{ opacity: 0, scaleX: 0 }}
-            transition={{ duration: 0.22, ease: "easeInOut" }}
-            style={{ transformOrigin: "right center" }}
-            className="w-full lg:w-[22%] lg:min-w-[250px] lg:flex-[22] flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0"
+            initial={{ opacity: 0, width: 0, scaleX: 0.95 }}
+            animate={{ opacity: 1, width: "22%", scaleX: 1 }}
+            exit={{ opacity: 0, width: 0, scaleX: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            style={{ transformOrigin: "100% 50%" }}
+            className="w-full lg:w-[22%] lg:min-w-[260px] flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0 ml-auto"
           >
             <div className="border-b border-border/40 pb-2 flex items-center justify-between shrink-0">
               <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Study Materials</h2>
