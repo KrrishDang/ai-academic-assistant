@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useLayoutEffect } from "react";
 
 export interface ThemeConfig {
   id: string;
@@ -192,8 +192,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem("settings_theme_id", themeId);
   };
 
-  // Apply theme variables dynamically to document root element
-  useEffect(() => {
+  // Apply theme variables dynamically to document root element before paint
+  useLayoutEffect(() => {
     const root = document.documentElement;
     
     // Set data-theme attribute

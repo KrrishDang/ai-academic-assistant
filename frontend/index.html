@@ -7,27 +7,112 @@
     <script>
       (function() {
         try {
-          var savedId = localStorage.getItem("settings_theme_id");
-          var savedMode = localStorage.getItem("settings_theme_mode");
-          var root = document.documentElement;
-          if (savedId) {
-            root.setAttribute("data-theme", savedId);
-            if (savedId === "catppuccin-latte") {
-              root.classList.remove("dark");
-              root.style.setProperty("color-scheme", "light");
-              return;
-            } else {
-              root.classList.add("dark");
-              root.style.setProperty("color-scheme", "dark");
-              return;
+          var themes = {
+            "catppuccin-mocha": {
+              type: "dark",
+              vars: {
+                background: "240 21% 15%",
+                foreground: "226 64% 88%",
+                card: "240 21% 12%",
+                "card-foreground": "226 64% 88%",
+                primary: "267 84% 81%",
+                "primary-foreground": "240 21% 9%",
+                secondary: "240 21% 9%",
+                "secondary-foreground": "226 64% 88%",
+                muted: "240 21% 12%",
+                "muted-foreground": "233 10% 47%",
+                accent: "237 16% 23%",
+                "accent-foreground": "267 84% 81%",
+                destructive: "343 81% 75%",
+                "destructive-foreground": "240 21% 9%",
+                border: "237 16% 23%",
+                input: "235 13% 31%",
+                ring: "267 84% 81%"
+              }
+            },
+            "catppuccin-macchiato": {
+              type: "dark",
+              vars: {
+                background: "232 23% 18%",
+                foreground: "227 70% 88%",
+                card: "233 23% 15%",
+                "card-foreground": "227 70% 88%",
+                primary: "267 83% 80%",
+                "primary-foreground": "236 23% 12%",
+                secondary: "236 23% 12%",
+                "secondary-foreground": "227 70% 88%",
+                muted: "233 23% 15%",
+                "muted-foreground": "230 12% 49%",
+                accent: "230 19% 26%",
+                "accent-foreground": "267 83% 80%",
+                destructive: "351 74% 73%",
+                "destructive-foreground": "236 23% 12%",
+                border: "230 19% 26%",
+                input: "231 16% 34%",
+                ring: "267 83% 80%"
+              }
+            },
+            "catppuccin-frappe": {
+              type: "dark",
+              vars: {
+                background: "229 19% 23%",
+                foreground: "227 70% 87%",
+                card: "231 19% 20%",
+                "card-foreground": "227 70% 87%",
+                primary: "277 59% 76%",
+                "primary-foreground": "229 20% 17%",
+                secondary: "229 20% 17%",
+                "secondary-foreground": "227 70% 87%",
+                muted: "231 19% 20%",
+                "muted-foreground": "229 13% 52%",
+                accent: "230 16% 30%",
+                "accent-foreground": "277 59% 76%",
+                destructive: "359 68% 71%",
+                "destructive-foreground": "229 20% 17%",
+                border: "230 16% 30%",
+                input: "227 15% 37%",
+                ring: "277 59% 76%"
+              }
+            },
+            "catppuccin-latte": {
+              type: "light",
+              vars: {
+                background: "220 23% 95%",
+                foreground: "234 16% 35%",
+                card: "220 22% 92%",
+                "card-foreground": "234 16% 35%",
+                primary: "266 85% 58%",
+                "primary-foreground": "0 0% 100%",
+                secondary: "220 21% 89%",
+                "secondary-foreground": "234 16% 35%",
+                muted: "220 22% 92%",
+                "muted-foreground": "228 11% 65%",
+                accent: "223 16% 83%",
+                "accent-foreground": "266 85% 58%",
+                destructive: "347 87% 44%",
+                "destructive-foreground": "0 0% 100%",
+                border: "223 16% 83%",
+                input: "225 14% 77%",
+                ring: "266 85% 58%"
+              }
             }
-          }
-          if (savedMode === "light") {
-            root.classList.remove("dark");
-            root.style.setProperty("color-scheme", "light");
-          } else {
+          };
+
+          var savedId = localStorage.getItem("settings_theme_id") || "catppuccin-mocha";
+          var theme = themes[savedId] || themes["catppuccin-mocha"];
+          var root = document.documentElement;
+
+          root.setAttribute("data-theme", savedId);
+          root.style.setProperty("color-scheme", theme.type);
+          if (theme.type === "dark") {
             root.classList.add("dark");
-            root.style.setProperty("color-scheme", "dark");
+          } else {
+            root.classList.remove("dark");
+          }
+
+          var vars = theme.vars;
+          for (var key in vars) {
+            root.style.setProperty("--" + key, vars[key]);
           }
         } catch (e) {}
       })();
