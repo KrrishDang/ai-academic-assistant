@@ -161,17 +161,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ? availableThemes.filter((t) => t.type === "light")
       : availableThemes.filter((t) => t.type === "dark");
 
-  // Determine current active theme
+  // Determine current active theme — selectedThemeId is the SOURCE OF TRUTH
   const currentActiveTheme: ThemeConfig = React.useMemo(() => {
     if (selectedThemeId) {
       const found = availableThemes.find((t) => t.id === selectedThemeId);
       if (found) {
-        if (themeMode === "light" && found.type === "dark") {
-          return availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
-        }
-        if (themeMode === "dark" && found.type === "light") {
-          return availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
-        }
         return found;
       }
     }
@@ -197,20 +191,23 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setSelectedThemeId = (themeId: string) => {
+    const found = availableThemes.find((t) => t.id === themeId);
     setSelectedThemeIdState(themeId);
     localStorage.setItem("settings_theme_id", themeId);
+    if (found) {
+      setThemeModeState(found.type);
+      localStorage.setItem("settings_theme_mode", found.type);
+    }
   };
 
   // Apply theme variables dynamically to document root element
   useEffect(() => {
     const root = document.documentElement;
     
-    // Clear inline styles first
-    Object.keys(currentActiveTheme.variables).forEach((key) => {
-      root.style.removeProperty(`--${key}`);
-    });
+    // Set data-theme attribute
+    root.setAttribute("data-theme", currentActiveTheme.id);
 
-    // Apply new values
+    // Apply new CSS variable values
     Object.entries(currentActiveTheme.variables).forEach(([key, val]) => {
       root.style.setProperty(`--${key}`, val);
     });

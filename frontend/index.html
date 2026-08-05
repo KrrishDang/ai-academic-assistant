@@ -4,6 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
+    <script>
+      (function() {
+        try {
+          var savedId = localStorage.getItem("settings_theme_id");
+          var savedMode = localStorage.getItem("settings_theme_mode");
+          var root = document.documentElement;
+          if (savedId) {
+            root.setAttribute("data-theme", savedId);
+            if (savedId === "catppuccin-latte" || savedMode === "light") {
+              root.classList.remove("dark");
+              root.style.setProperty("color-scheme", "light");
+              return;
+            }
+          }
+          if (savedMode === "light") {
+            root.classList.remove("dark");
+            root.style.setProperty("color-scheme", "light");
+          } else {
+            root.classList.add("dark");
+            root.style.setProperty("color-scheme", "dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <title>Study Assistant | Workspace</title>
