@@ -139,105 +139,61 @@ export const availableThemes: ThemeConfig[] = [
   }
 ];
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
-    return (localStorage.getItem("settings_theme_mode") as ThemeMode) || "system";
+export function applyThemeToDOM(theme: ThemeConfig) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.setAttribute("data-theme", theme.id);
+  root.style.setProperty("color-scheme", theme.type);
+  if (theme.type === "dark") {
+    root.classList.add("dark");
+  } else {
+    root.classList.remove("dark");
+  }
+  Object.entries(theme.variables).forEach(([key, val]) => {
+    root.style.setProperty(`--${key}`, val);
   });
+}
 
-  const [selectedThemeId, setSelectedThemeIdState] = useState<string>(() => {
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // SINGLE SOURCE OF TRUTH STATE
+  const [activeThemeId, setActiveThemeIdState] = useState<string>(() => {
     return localStorage.getItem("settings_theme_id") || "catppuccin-mocha";
   });
 
-  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
-    if (typeof window === "undefined") return "dark";
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
+  const activeTheme =
+    availableThemes.find((t) => t.id === activeThemeId) || availableThemes[0];
 
-  // Selectable themes in Theme Picker: always expose all 4 Catppuccin themes
-  const selectableThemes = availableThemes;
+  const setActiveTheme = (themeId: string) => {
+    const found = availableThemes.find((t) => t.id === themeId);
+    const targetId = found ? found.id : "catppuccin-mocha";
+    setActiveThemeIdState(targetId);
+    localStorage.setItem("settings_theme_id", targetId);
+  };
 
-  // Determine current active theme — independent state decoupling
-  const currentActiveTheme: ThemeConfig = React.useMemo(() => {
-    if (selectedThemeId) {
-      const found = availableThemes.find((t) => t.id === selectedThemeId);
-      if (found) {
-        return found;
-      }
-    }
-
-    if (themeMode === "light") {
-      return availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
-    }
-    if (themeMode === "dark") {
-      return availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
-    }
-
-    return systemTheme === "light"
-      ? availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3]
-      : availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
-  }, [themeMode, selectedThemeId, systemTheme]);
-
-  const effectiveType = currentActiveTheme.type;
-  const activeThemeId = currentActiveTheme.id;
-
-  // Independent Appearance Mode mutator — NEVER modifies selectedThemeId
   const setThemeMode = (mode: ThemeMode) => {
-    setThemeModeState(mode);
-    localStorage.setItem("settings_theme_mode", mode);
-  };
-
-  // Independent Theme mutator — NEVER modifies themeMode
-  const setSelectedThemeId = (themeId: string) => {
-    setSelectedThemeIdState(themeId);
-    localStorage.setItem("settings_theme_id", themeId);
-  };
-
-  // Apply theme variables dynamically to document root element before paint
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    
-    // Set data-theme attribute
-    root.setAttribute("data-theme", currentActiveTheme.id);
-
-    // Apply new CSS variable values
-    Object.entries(currentActiveTheme.variables).forEach(([key, val]) => {
-      root.style.setProperty(`--${key}`, val);
-    });
-
-    // Dark Reader and browser compatibility
-    root.style.setProperty("color-scheme", currentActiveTheme.type);
-
-    if (currentActiveTheme.type === "dark") {
-      root.classList.add("dark");
+    if (mode === "light") {
+      setActiveTheme("catppuccin-latte");
     } else {
-      root.classList.remove("dark");
+      setActiveTheme("catppuccin-mocha");
     }
-  }, [currentActiveTheme]);
+  };
 
-  // Sync with system theme changes when mode is set to system
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemChange = (e: MediaQueryListEvent) => {
-      setSystemTheme(e.matches ? "dark" : "light");
-    };
-
-    mediaQuery.addEventListener("change", handleSystemChange);
-    return () => mediaQuery.removeEventListener("change", handleSystemChange);
-  }, []);
+  // Synchronously apply active theme properties to DOM before paint
+  useLayoutEffect(() => {
+    applyThemeToDOM(activeTheme);
+  }, [activeTheme]);
 
   return (
     <ThemeContext.Provider
       value={{
-        themeMode,
-        selectedThemeId: activeThemeId,
+        themeMode: activeTheme.type,
+        selectedThemeId: activeTheme.id,
         setThemeMode,
-        setSelectedThemeId,
+        setSelectedThemeId: setActiveTheme,
         availableThemes,
-        selectableThemes,
-        currentActiveTheme,
-        effectiveType,
+        selectableThemes: availableThemes,
+        currentActiveTheme: activeTheme,
+        effectiveType: activeTheme.type,
       }}
     >
       {children}
