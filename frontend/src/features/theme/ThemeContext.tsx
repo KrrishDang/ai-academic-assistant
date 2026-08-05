@@ -30,7 +30,6 @@ export type ThemeMode = "light" | "dark" | "system";
 interface ThemeContextType {
   themeMode: ThemeMode;
   selectedThemeId: string;
-  selectedDarkThemeId: string;
   setThemeMode: (mode: ThemeMode) => void;
   setSelectedThemeId: (themeId: string) => void;
   availableThemes: ThemeConfig[];
@@ -145,16 +144,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return (localStorage.getItem("settings_theme_mode") as ThemeMode) || "system";
   });
 
-  const [selectedDarkThemeId, setSelectedDarkThemeId] = useState<string>(() => {
-    const storedDark = localStorage.getItem("settings_dark_theme_id");
-    if (storedDark && ["catppuccin-mocha", "catppuccin-macchiato", "catppuccin-frappe"].includes(storedDark)) {
-      return storedDark;
-    }
-    const stored = localStorage.getItem("settings_theme_id");
-    if (stored && ["catppuccin-mocha", "catppuccin-macchiato", "catppuccin-frappe"].includes(stored)) {
-      return stored;
-    }
-    return "catppuccin-mocha";
+  const [selectedThemeId, setSelectedThemeIdState] = useState<string | null>(() => {
+    return localStorage.getItem("settings_theme_id") || null;
   });
 
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
@@ -162,17 +153,43 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
-  const effectiveType: "light" | "dark" =
-    themeMode === "system" ? systemTheme : themeMode;
+  // Selectable themes in Theme Picker: System mode shows ALL 4 themes
+  const selectableThemes =
+    themeMode === "system"
+      ? availableThemes
+      : themeMode === "light"
+      ? availableThemes.filter((t) => t.type === "light")
+      : availableThemes.filter((t) => t.type === "dark");
 
-  const selectableThemes = availableThemes.filter((t) => t.type === effectiveType);
+  // Determine current active theme
+  const currentActiveTheme: ThemeConfig = React.useMemo(() => {
+    if (selectedThemeId) {
+      const found = availableThemes.find((t) => t.id === selectedThemeId);
+      if (found) {
+        if (themeMode === "light" && found.type === "dark") {
+          return availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
+        }
+        if (themeMode === "dark" && found.type === "light") {
+          return availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
+        }
+        return found;
+      }
+    }
 
-  const currentActiveTheme: ThemeConfig =
-    effectiveType === "light"
+    if (themeMode === "light") {
+      return availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
+    }
+    if (themeMode === "dark") {
+      return availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
+    }
+
+    return systemTheme === "light"
       ? availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3]
-      : availableThemes.find((t) => t.id === selectedDarkThemeId) || availableThemes[0];
+      : availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
+  }, [themeMode, selectedThemeId, systemTheme]);
 
-  const selectedThemeId = currentActiveTheme.id;
+  const effectiveType = currentActiveTheme.type;
+  const activeThemeId = currentActiveTheme.id;
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
@@ -180,17 +197,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setSelectedThemeId = (themeId: string) => {
-    const target = availableThemes.find((t) => t.id === themeId);
-    if (!target) return;
-
-    if (target.type === "dark") {
-      setSelectedDarkThemeId(themeId);
-      localStorage.setItem("settings_dark_theme_id", themeId);
-    }
+    setSelectedThemeIdState(themeId);
     localStorage.setItem("settings_theme_id", themeId);
   };
 
-  // Apply theme variables dynamically to the document root element
+  // Apply theme variables dynamically to document root element
   useEffect(() => {
     const root = document.documentElement;
     
@@ -204,6 +215,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.style.setProperty(`--${key}`, val);
     });
 
+    // Dark Reader and browser compatibility
     root.style.setProperty("color-scheme", currentActiveTheme.type);
 
     if (currentActiveTheme.type === "dark") {
@@ -230,8 +242,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <ThemeContext.Provider
       value={{
         themeMode,
-        selectedThemeId,
-        selectedDarkThemeId,
+        selectedThemeId: activeThemeId,
         setThemeMode,
         setSelectedThemeId,
         availableThemes,

@@ -131,99 +131,91 @@ export function SettingsPage() {
             Theme
           </label>
 
-          {effectiveType === "light" ? (
-            <div className="flex items-center gap-3 p-3.5 rounded-xl border border-border/60 bg-card/50">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary shrink-0">
-                <Sun size={18} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-bold text-foreground">Catppuccin Latte</span>
-                <span className="text-[11px] text-muted-foreground font-medium">
-                  Catppuccin Latte is the official light theme.
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div
-              role="radiogroup"
-              aria-label="Catppuccin dark color theme selection"
-              className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-            >
-              {selectableThemes.map((t) => {
-                const isActive = selectedThemeId === t.id;
-                const bgHsl = `hsl(${t.variables.background})`;
-                const cardHsl = `hsl(${t.variables.card})`;
-                const primaryHsl = `hsl(${t.variables.primary})`;
-                const accentHsl = `hsl(${t.variables.accent})`;
+          <div
+            role="radiogroup"
+            aria-label="Catppuccin color theme selection"
+            className={`grid gap-3 ${
+              selectableThemes.length === 1
+                ? "grid-cols-1 max-w-xs"
+                : selectableThemes.length === 3
+                ? "grid-cols-1 sm:grid-cols-3"
+                : "grid-cols-2 sm:grid-cols-4"
+            }`}
+          >
+            {selectableThemes.map((t) => {
+              const isActive = selectedThemeId === t.id;
+              const bgHsl = `hsl(${t.variables.background})`;
+              const cardHsl = `hsl(${t.variables.card})`;
+              const primaryHsl = `hsl(${t.variables.primary})`;
+              const accentHsl = `hsl(${t.variables.accent})`;
 
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isActive}
-                    aria-label={`${t.name} theme`}
-                    onClick={() => {
-                      setSelectedThemeId(t.id);
-                      triggerSave();
-                    }}
-                    className={`
-                      relative p-2.5 rounded-xl border flex flex-col items-center text-center gap-2
-                      transition-all duration-150 cursor-pointer
-                      hover:scale-[1.02] hover:shadow-md
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
-                      ${
-                        isActive
-                          ? "border-[#b4befe] shadow-[0_0_12px_-3px_rgba(180,190,254,0.35)] bg-[#b4befe]/[0.06]"
-                          : "border-border/50 bg-card hover:border-[#b4befe]/30"
-                      }
-                    `}
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isActive}
+                  aria-label={`${t.name} theme`}
+                  onClick={() => {
+                    setSelectedThemeId(t.id);
+                    triggerSave();
+                  }}
+                  className={`
+                    relative p-2.5 rounded-xl border flex flex-col items-center text-center gap-2
+                    transition-all duration-150 cursor-pointer
+                    hover:scale-[1.02] hover:shadow-md
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1
+                    ${
+                      isActive
+                        ? "border-[#b4befe] shadow-[0_0_12px_-3px_rgba(180,190,254,0.35)] bg-[#b4befe]/[0.06]"
+                        : "border-border/50 bg-card hover:border-[#b4befe]/30"
+                    }
+                  `}
+                >
+                  {/* Checkmark badge */}
+                  {isActive && (
+                    <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#b4befe] flex items-center justify-center">
+                      <Check size={10} className="text-background" strokeWidth={3} />
+                    </span>
+                  )}
+
+                  {/* Miniature preview mockup */}
+                  <div
+                    className="w-full h-11 rounded-lg flex flex-col p-1.5 gap-0.5 relative overflow-hidden border border-black/10"
+                    style={{ backgroundColor: bgHsl }}
                   >
-                    {/* Checkmark badge */}
-                    {isActive && (
-                      <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-[#b4befe] flex items-center justify-center">
-                        <Check size={10} className="text-background" strokeWidth={3} />
-                      </span>
-                    )}
-
-                    {/* Miniature preview mockup */}
                     <div
-                      className="w-full h-11 rounded-lg flex flex-col p-1.5 gap-0.5 relative overflow-hidden border border-black/10"
-                      style={{ backgroundColor: bgHsl }}
+                      className="h-1 w-2/3 rounded-full opacity-70"
+                      style={{ backgroundColor: primaryHsl }}
+                    />
+                    <div
+                      className="flex-1 rounded flex gap-1 p-0.5 border border-white/5"
+                      style={{ backgroundColor: cardHsl }}
                     >
                       <div
-                        className="h-1 w-2/3 rounded-full opacity-70"
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
                         style={{ backgroundColor: primaryHsl }}
                       />
-                      <div
-                        className="flex-1 rounded flex gap-1 p-0.5 border border-white/5"
-                        style={{ backgroundColor: cardHsl }}
-                      >
+                      <div className="flex-1 flex flex-col gap-0.5 justify-center">
                         <div
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: primaryHsl }}
+                          className="h-0.5 w-full rounded-full opacity-50"
+                          style={{ backgroundColor: accentHsl }}
                         />
-                        <div className="flex-1 flex flex-col gap-0.5 justify-center">
-                          <div
-                            className="h-0.5 w-full rounded-full opacity-50"
-                            style={{ backgroundColor: accentHsl }}
-                          />
-                          <div
-                            className="h-0.5 w-2/3 rounded-full opacity-50"
-                            style={{ backgroundColor: accentHsl }}
-                          />
-                        </div>
+                        <div
+                          className="h-0.5 w-2/3 rounded-full opacity-50"
+                          style={{ backgroundColor: accentHsl }}
+                        />
                       </div>
                     </div>
+                  </div>
 
-                    <span className="text-xs font-bold truncate w-full text-foreground">
-                      {t.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                  <span className="text-xs font-bold truncate w-full text-foreground">
+                    {t.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </Card>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useConversations } from "@/features/conversations/ConversationContext";
 import { useDocuments } from "@/features/documents/DocumentContext";
 import { Button } from "@/components/ui/button";
@@ -706,91 +706,96 @@ export function WorkspacePage() {
         </footer>
       </div>
 
-      {/* Right Panel: Study Materials Panel */}
-      <div className={cn(
-        "flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0 transition-all duration-300",
-        isFocusMode || !isRightPanelOpen ? "hidden" : "w-full lg:w-[22%] lg:min-w-[250px] lg:flex-[22]"
-      )}>
-        <div className="border-b border-border/40 pb-2 flex items-center justify-between shrink-0">
-          <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Study Materials</h2>
-          <span className="text-[10px] text-muted-foreground font-semibold">Saved locally</span>
-        </div>
+      {/* Right Panel: Study Materials Drawer Panel */}
+      <AnimatePresence>
+        {!isFocusMode && isRightPanelOpen && (
+          <motion.aside
+            key="study-materials-drawer"
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={{ opacity: 1, scaleX: 1 }}
+            exit={{ opacity: 0, scaleX: 0 }}
+            transition={{ duration: 0.22, ease: "easeInOut" }}
+            style={{ transformOrigin: "right center" }}
+            className="w-full lg:w-[22%] lg:min-w-[250px] lg:flex-[22] flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0"
+          >
+            <div className="border-b border-border/40 pb-2 flex items-center justify-between shrink-0">
+              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Study Materials</h2>
+              <span className="text-[10px] text-muted-foreground font-semibold">Saved locally</span>
+            </div>
 
-        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-          {generationOptions.map((opt) => {
-            const activeKey = keyMap[opt.name];
-            const isGenerated = !!cachedResults?.[activeKey];
-            const isThisGenerating = generatingResource === opt.name;
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+              {generationOptions.map((opt) => {
+                const activeKey = keyMap[opt.name];
+                const isGenerated = !!cachedResults?.[activeKey];
+                const isThisGenerating = generatingResource === opt.name;
 
-            return (
-              <div key={opt.name} className="flex flex-col p-3 rounded-lg border border-border/60 bg-card/30 space-y-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-primary text-sm shrink-0">
-                      {opt.name === "Notes" ? "📘" :
-                       opt.name === "5-Mark Answer" ? "✍️" :
-                       opt.name === "10-Mark Answer" ? "📝" :
-                       opt.name === "Generate MCQs" ? "❓" :
-                       opt.name === "Viva Questions" ? "🎤" :
-                       opt.name === "Explanation" ? "💡" :
-                       opt.name === "Flashcards" ? "🧠" : "📄"}
-                    </span>
-                    <span className="text-xs font-bold text-foreground truncate">{opt.name}</span>
+                return (
+                  <div key={opt.name} className="flex flex-col p-3 rounded-lg border border-border/60 bg-card/30 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-primary text-sm shrink-0">
+                          {opt.name === "Notes" ? "📘" :
+                           opt.name === "5-Mark Answer" ? "✍️" :
+                           opt.name === "10-Mark Answer" ? "📝" :
+                           opt.name === "Generate MCQs" ? "❓" :
+                           opt.name === "Viva Questions" ? "🎤" :
+                           opt.name === "Explanation" ? "💡" :
+                           opt.name === "Flashcards" ? "🧠" : "📄"}
+                        </span>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-foreground truncate">{opt.name}</span>
+                        </div>
+                      </div>
+                      {isGenerated && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-500/10 text-green-500 border border-green-500/20 shrink-0">
+                          Ready
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isThisGenerating ? (
+                        <Button disabled className="w-full h-7 text-[10px] font-bold flex items-center justify-center gap-1.5">
+                          <Loader2 size={12} className="animate-spin" />
+                          <span>Generating...</span>
+                        </Button>
+                      ) : isGenerated ? (
+                        <>
+                          <Button
+                            onClick={() => openResourceInModal(opt.name, cachedResults[activeKey])}
+                            className="flex-1 h-7 text-[10px] font-bold flex items-center justify-center gap-1 active:scale-[0.98]"
+                          >
+                            <span>Open</span>
+                            <ArrowRight size={10} />
+                          </Button>
+                          <Button
+                            disabled={generatingResource !== null}
+                            onClick={() => generateResource(opt.name, opt.fn)}
+                            variant="outline"
+                            className="h-7 px-2.5 text-[9px] font-bold border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted active:scale-[0.98]"
+                            title="Regenerate"
+                          >
+                            <RefreshCw size={10} />
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          disabled={generatingResource !== null}
+                          onClick={() => generateResource(opt.name, opt.fn)}
+                          className="w-full h-7 text-[10px] font-bold flex items-center justify-center gap-1 active:scale-[0.98]"
+                        >
+                          <span>Generate</span>
+                          <ArrowRight size={10} />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-
-                  {isThisGenerating ? (
-                    <span className="text-[9px] bg-amber-500/10 border border-amber-500/20 text-amber-600 font-bold px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
-                      <Loader2 size={8} className="animate-spin" />
-                      Generating
-                    </span>
-                  ) : isGenerated ? (
-                    <span className="text-[9px] bg-green-500/10 border border-green-500/20 text-green-600 font-bold px-2 py-0.5 rounded-full">
-                      ✓ Ready
-                    </span>
-                  ) : (
-                    <span className="text-[9px] bg-muted text-muted-foreground font-semibold px-2 py-0.5 rounded-full">
-                      Ready to generate
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {isGenerated ? (
-                    <>
-                      <Button
-                        disabled={generatingResource !== null}
-                        onClick={() => openResourceInModal(opt.name, cachedResults[activeKey])}
-                        className="h-7 text-[10px] font-bold flex-1 flex items-center justify-center gap-1 active:scale-[0.98]"
-                      >
-                        <span>Open</span>
-                        <ArrowRight size={10} />
-                      </Button>
-                      <Button
-                        disabled={generatingResource !== null}
-                        onClick={() => generateResource(opt.name, opt.fn)}
-                        variant="outline"
-                        className="h-7 px-2.5 text-[9px] font-bold border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted active:scale-[0.98]"
-                        title="Regenerate"
-                      >
-                        <RefreshCw size={10} />
-                      </Button>
-                    </>
-                  ) : (
-                    <Button
-                      disabled={generatingResource !== null}
-                      onClick={() => generateResource(opt.name, opt.fn)}
-                      className="w-full h-7 text-[10px] font-bold flex items-center justify-center gap-1 active:scale-[0.98]"
-                    >
-                      <span>Generate</span>
-                      <ArrowRight size={10} />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                );
+              })}
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
 
       {/* Floating Resource Viewer Overlay Modal */}
       {viewingResource && (
