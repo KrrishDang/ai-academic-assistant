@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useConversations } from "@/features/conversations/ConversationContext";
 import { useDocuments } from "@/features/documents/DocumentContext";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
 import { getGeneratedResults, saveGeneratedResult } from "@/lib/db";
+import { cn } from "@/lib/utils";
 import { 
   explainSimply,
   generateFiveMarkAnswer,
@@ -36,7 +37,11 @@ import {
   Copy,
   Download,
   Edit2,
-  WifiOff
+  WifiOff,
+  Maximize2,
+  Minimize2,
+  PanelRightClose,
+  PanelRightOpen
 } from "lucide-react";
 import { exportToMarkdown, exportToDocx, exportToPdf } from "@/lib/export";
 
@@ -55,6 +60,18 @@ export function WorkspacePage() {
 
   const { documents, selectDocument } = useDocuments();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isFocusMode = location.search.includes("focus=true");
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+
+  const toggleFocusMode = () => {
+    if (isFocusMode) {
+      navigate(location.pathname, { replace: true });
+    } else {
+      navigate(`${location.pathname}?focus=true`, { replace: true });
+    }
+  };
 
   const [prompt, setPrompt] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -364,11 +381,14 @@ export function WorkspacePage() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-140px)] w-full relative">
+    <div className="flex flex-col lg:flex-row gap-5 h-[calc(100vh-105px)] w-full relative">
       {/* Left Panel: AI Tutor Chat */}
-      <div className="flex-1 lg:flex-[7] flex flex-col h-full border border-border/85 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg min-w-0">
+      <div className={cn(
+        "flex flex-col h-full border border-border/85 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg min-w-0 transition-all duration-300",
+        isFocusMode || !isRightPanelOpen ? "w-full flex-1" : "flex-1 lg:w-[78%] lg:flex-[78]"
+      )}>
         {/* Header bar */}
-        <header className="flex items-center justify-between px-5 py-4 border-b border-border/40 bg-card/65 backdrop-blur-sm shrink-0">
+        <header className="flex items-center justify-between px-5 py-3.5 border-b border-border/40 bg-card/65 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-xl shrink-0">📄</span>
             <div className="flex flex-col min-w-0">
@@ -382,11 +402,31 @@ export function WorkspacePage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Button
+              onClick={toggleFocusMode}
+              variant="outline"
+              className={cn(
+                "h-8 px-2.5 text-xs flex items-center gap-1.5 font-bold border-border/60 transition-all",
+                isFocusMode ? "bg-[#b4befe]/15 text-[#b4befe] border-[#b4befe]/40" : "text-muted-foreground hover:text-foreground"
+              )}
+              title={isFocusMode ? "Exit Focus Mode" : "Enter Focus Mode"}
+            >
+              {isFocusMode ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+              <span className="hidden sm:inline">{isFocusMode ? "Exit Focus" : "Focus Mode"}</span>
+            </Button>
+            <Button
+              onClick={() => setIsRightPanelOpen((prev) => !prev)}
+              variant="outline"
+              className="h-8 w-8 p-0 flex items-center justify-center border-border/60 text-muted-foreground hover:text-foreground hidden lg:flex"
+              title={isRightPanelOpen ? "Collapse Study Materials" : "Expand Study Materials"}
+            >
+              {isRightPanelOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+            </Button>
             <Button 
               onClick={() => handleExportChat("markdown")} 
               variant="outline" 
-              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground"
+              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground hidden sm:flex"
               title="Export chat as Markdown"
             >
               <span>.MD</span>
@@ -394,7 +434,7 @@ export function WorkspacePage() {
             <Button 
               onClick={() => handleExportChat("docx")} 
               variant="outline" 
-              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground"
+              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground hidden sm:flex"
               title="Export chat as Word DOCX"
             >
               <span>.DOCX</span>
@@ -402,7 +442,7 @@ export function WorkspacePage() {
             <Button 
               onClick={() => handleExportChat("pdf")} 
               variant="outline" 
-              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground"
+              className="h-8 px-2 text-xs flex items-center gap-1 font-bold border-border/60 text-muted-foreground hover:text-foreground hidden sm:flex"
               title="Export chat as PDF"
             >
               <span>.PDF</span>
@@ -425,7 +465,7 @@ export function WorkspacePage() {
         <div
           ref={chatContainerRef}
           onScroll={handleChatScroll}
-          className="flex-1 overflow-y-auto p-5 space-y-4"
+          className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6"
         >
           {messagesLoading ? (
             <div className="flex flex-col items-center justify-center h-full space-y-2">
@@ -454,19 +494,21 @@ export function WorkspacePage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2 }}
-                  className={`flex items-start gap-3 group max-w-[85%] ${isUser ? "ml-auto flex-row-reverse" : "mr-auto"}`}
+                  className={`flex items-start gap-3.5 group ${isUser ? "max-w-[85%] sm:max-w-[78%] ml-auto flex-row-reverse" : "w-full mr-auto"}`}
                 >
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 ${
-                    isUser ? "bg-primary text-primary-foreground font-bold" : "bg-muted text-muted-foreground border border-border/80 font-bold"
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-full shrink-0 shadow-sm ${
+                    isUser 
+                      ? "bg-primary/20 text-primary border border-primary/30 font-bold" 
+                      : "bg-[#b4befe]/15 text-[#b4befe] border border-[#b4befe]/30 font-bold"
                   }`}>
                     {isUser ? <UserIcon size={14} /> : <Bot size={14} />}
                   </div>
 
-                  <div className="flex flex-col gap-1.5 min-w-0">
-                    <div className={`rounded-xl px-4 py-3 border text-xs leading-relaxed ${
+                  <div className={`flex flex-col gap-1.5 min-w-0 ${isUser ? "items-end" : "flex-1"}`}>
+                    <div className={`rounded-2xl border text-xs sm:text-sm leading-relaxed transition-all ${
                       isUser 
-                        ? "bg-primary/10 border-primary/20 text-foreground font-medium" 
-                        : "bg-card/75 border-border/40 text-foreground font-medium"
+                        ? "bg-primary/10 border-primary/20 text-foreground font-medium px-4 py-3 shadow-sm" 
+                        : "bg-card border-border/60 text-foreground font-medium p-5 shadow-sm w-full"
                     }`}>
                       {isEditing ? (
                         <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[300px]">
@@ -493,7 +535,7 @@ export function WorkspacePage() {
                         </div>
                       ) : (
                         <div className="markdown-body">
-                          <MarkdownContent content={msg.content} />
+                          <MarkdownContent content={msg.content} showCursor={showCursor} />
                         </div>
                       )}
                     </div>
@@ -643,7 +685,10 @@ export function WorkspacePage() {
       </div>
 
       {/* Right Panel: Study Materials Panel */}
-      <div className="w-full lg:w-80 lg:flex-[3] flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0">
+      <div className={cn(
+        "flex flex-col h-full border border-border/80 bg-card/45 backdrop-blur-md rounded-2xl overflow-hidden shadow-lg p-4 space-y-4 shrink-0 transition-all duration-300",
+        isFocusMode || !isRightPanelOpen ? "hidden" : "w-full lg:w-[22%] lg:min-w-[250px] lg:flex-[22]"
+      )}>
         <div className="border-b border-border/40 pb-2 flex items-center justify-between shrink-0">
           <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Study Materials</h2>
           <span className="text-[10px] text-muted-foreground font-semibold">Saved locally</span>

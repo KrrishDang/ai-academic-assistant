@@ -84,6 +84,7 @@ export function AppLayout() {
   );
   const { documents } = useDocuments();
   const location = useLocation();
+  const isFocusMode = location.search.includes("focus=true");
 
   useEffect(() => {
     const handleResize = () => {
@@ -97,9 +98,9 @@ export function AppLayout() {
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
       {/* ── Desktop Sidebar ──────────────────────────────────────── */}
       <motion.aside
-        animate={{ width: isCollapsed ? 72 : 256 }}
+        animate={{ width: isFocusMode ? 0 : isCollapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
-        className="fixed inset-y-0 left-0 hidden border-r border-border/60 bg-card md:flex flex-col z-30"
+        className="fixed inset-y-0 left-0 hidden border-r border-border/60 bg-card md:flex flex-col z-30 overflow-hidden"
       >
         {/* Top section */}
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -304,11 +305,11 @@ export function AppLayout() {
 
       {/* ── Main Content ─────────────────────────────────────────── */}
       <motion.main
-        animate={{ paddingLeft: isMobile ? 0 : isCollapsed ? 72 : 256 }}
+        animate={{ paddingLeft: isMobile || isFocusMode ? 0 : isCollapsed ? 72 : 256 }}
         transition={{ duration: 0.2, ease: "easeInOut" }}
         className="flex-1 min-h-screen flex flex-col w-full"
       >
-        <div className="flex-1 w-full max-w-5xl mx-auto p-4 sm:p-6 md:p-10 lg:p-12">
+        <div className={cn("flex-1 w-full mx-auto transition-all duration-200", isFocusMode ? "max-w-full p-2 sm:p-4" : location.pathname === "/workspace" ? "max-w-[1600px] p-3 sm:p-5 md:p-6" : "max-w-5xl p-4 sm:p-6 md:p-10 lg:p-12")}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
