@@ -30,10 +30,13 @@ export type ThemeMode = "light" | "dark" | "system";
 interface ThemeContextType {
   themeMode: ThemeMode;
   selectedThemeId: string;
+  selectedDarkThemeId: string;
   setThemeMode: (mode: ThemeMode) => void;
   setSelectedThemeId: (themeId: string) => void;
   availableThemes: ThemeConfig[];
+  selectableThemes: ThemeConfig[];
   currentActiveTheme: ThemeConfig;
+  effectiveType: "light" | "dark";
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -141,40 +144,35 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
     return (localStorage.getItem("settings_theme_mode") as ThemeMode) || "system";
   });
-  const [selectedThemeId, setSelectedThemeIdState] = useState<string>(() => {
+
+  const [selectedDarkThemeId, setSelectedDarkThemeId] = useState<string>(() => {
+    const storedDark = localStorage.getItem("settings_dark_theme_id");
+    if (storedDark && ["catppuccin-mocha", "catppuccin-macchiato", "catppuccin-frappe"].includes(storedDark)) {
+      return storedDark;
+    }
     const stored = localStorage.getItem("settings_theme_id");
-    if (stored && availableThemes.some((t) => t.id === stored)) {
+    if (stored && ["catppuccin-mocha", "catppuccin-macchiato", "catppuccin-frappe"].includes(stored)) {
       return stored;
     }
     return "catppuccin-mocha";
   });
 
-  const getSystemTheme = (): "light" | "dark" => {
+  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "dark";
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  };
+  });
 
-  const getActiveTheme = (mode: ThemeMode, themeId: string): ThemeConfig => {
-    const selected = availableThemes.find((t) => t.id === themeId);
-    if (selected) {
-      if (mode === "dark" && selected.type === "light") {
-        return availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0];
-      }
-      if (mode === "light" && selected.type === "dark") {
-        return availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
-      }
-      if (mode === "system") {
-        const sysType = getSystemTheme();
-        if (selected.type === sysType) return selected;
-        return sysType === "dark"
-          ? availableThemes.find((t) => t.id === "catppuccin-mocha") || availableThemes[0]
-          : availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3];
-      }
-      return selected;
-    }
-    return availableThemes[0];
-  };
+  const effectiveType: "light" | "dark" =
+    themeMode === "system" ? systemTheme : themeMode;
 
-  const currentActiveTheme = getActiveTheme(themeMode, selectedThemeId);
+  const selectableThemes = availableThemes.filter((t) => t.type === effectiveType);
+
+  const currentActiveTheme: ThemeConfig =
+    effectiveType === "light"
+      ? availableThemes.find((t) => t.id === "catppuccin-latte") || availableThemes[3]
+      : availableThemes.find((t) => t.id === selectedDarkThemeId) || availableThemes[0];
+
+  const selectedThemeId = currentActiveTheme.id;
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
@@ -182,7 +180,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const setSelectedThemeId = (themeId: string) => {
-    setSelectedThemeIdState(themeId);
+    const target = availableThemes.find((t) => t.id === themeId);
+    if (!target) return;
+
+    if (target.type === "dark") {
+      setSelectedDarkThemeId(themeId);
+      localStorage.setItem("settings_dark_theme_id", themeId);
+    }
     localStorage.setItem("settings_theme_id", themeId);
   };
 
@@ -211,27 +215,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Sync with system theme changes when mode is set to system
   useEffect(() => {
-    if (themeMode !== "system") return;
+    if (typeof window === "undefined") return;
 
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemChange = () => {
-      // Trigger state re-evaluation by setting state
-      setThemeModeState("system");
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      setSystemTheme(e.matches ? "dark" : "light");
     };
 
     mediaQuery.addEventListener("change", handleSystemChange);
     return () => mediaQuery.removeEventListener("change", handleSystemChange);
-  }, [themeMode]);
+  }, []);
 
   return (
     <ThemeContext.Provider
       value={{
         themeMode,
         selectedThemeId,
+        selectedDarkThemeId,
         setThemeMode,
         setSelectedThemeId,
         availableThemes,
-        currentActiveTheme
+        selectableThemes,
+        currentActiveTheme,
+        effectiveType,
       }}
     >
       {children}
