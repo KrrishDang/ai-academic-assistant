@@ -153,15 +153,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
 
-  // Selectable themes in Theme Picker: System mode shows ALL 4 themes
-  const selectableThemes =
-    themeMode === "system"
-      ? availableThemes
-      : themeMode === "light"
-      ? availableThemes.filter((t) => t.type === "light")
-      : availableThemes.filter((t) => t.type === "dark");
+  // Selectable themes in Theme Picker: always expose all 4 Catppuccin themes
+  const selectableThemes = availableThemes;
 
-  // Determine current active theme — selectedThemeId is the SOURCE OF TRUTH
+  // Determine current active theme — independent state decoupling
   const currentActiveTheme: ThemeConfig = React.useMemo(() => {
     if (selectedThemeId) {
       const found = availableThemes.find((t) => t.id === selectedThemeId);
@@ -185,32 +180,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const effectiveType = currentActiveTheme.type;
   const activeThemeId = currentActiveTheme.id;
 
+  // Independent Appearance Mode mutator — NEVER modifies selectedThemeId
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
     localStorage.setItem("settings_theme_mode", mode);
-
-    if (mode === "light") {
-      setSelectedThemeIdState("catppuccin-latte");
-      localStorage.setItem("settings_theme_id", "catppuccin-latte");
-    } else if (mode === "dark") {
-      if (!selectedThemeId || selectedThemeId === "catppuccin-latte") {
-        setSelectedThemeIdState("catppuccin-mocha");
-        localStorage.setItem("settings_theme_id", "catppuccin-mocha");
-      }
-    } else if (mode === "system") {
-      setSelectedThemeIdState(null);
-      localStorage.removeItem("settings_theme_id");
-    }
   };
 
+  // Independent Theme mutator — NEVER modifies themeMode
   const setSelectedThemeId = (themeId: string) => {
-    const found = availableThemes.find((t) => t.id === themeId);
     setSelectedThemeIdState(themeId);
     localStorage.setItem("settings_theme_id", themeId);
-    if (found) {
-      setThemeModeState(found.type);
-      localStorage.setItem("settings_theme_mode", found.type);
-    }
   };
 
   // Apply theme variables dynamically to document root element

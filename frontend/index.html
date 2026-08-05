@@ -12,9 +12,13 @@
           var root = document.documentElement;
           if (savedId) {
             root.setAttribute("data-theme", savedId);
-            if (savedId === "catppuccin-latte" || savedMode === "light") {
+            if (savedId === "catppuccin-latte") {
               root.classList.remove("dark");
               root.style.setProperty("color-scheme", "light");
+              return;
+            } else {
+              root.classList.add("dark");
+              root.style.setProperty("color-scheme", "dark");
               return;
             }
           }
