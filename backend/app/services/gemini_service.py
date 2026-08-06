@@ -92,7 +92,7 @@ class GeminiService:
             logger.info("Completed Gemini chat stream in %.2f seconds.", time.time() - start_time)
         except Exception as error:
             logger.exception("Gemini chat stream failed.")
-            raise GeminiStreamError("The chat assistant is temporarily unavailable.") from error
+            raise GeminiStreamError(self._format_actionable_error(error)) from error
 
     async def _stream_chunk(self, *, instructions: str, chunk_text: str) -> AsyncIterator[str]:
         """Yield text deltas for a single chunk, retrying transient failures."""
@@ -140,7 +140,7 @@ class GeminiService:
                 # Raise error if retry is not possible or exhausted
                 if emitted_output or not self._is_retryable(error) or attempt >= self._max_retries:
                     logger.exception("Gemini response stream failed.")
-                    raise GeminiStreamError("The AI service is temporarily unavailable.") from error
+                    raise GeminiStreamError(self._format_actionable_error(error)) from error
 
                 delay_seconds = self._retry_delay(attempt)
                 logger.debug("Gemini _stream_chunk: Retry check passed. Retrying in %.2f seconds", delay_seconds)
@@ -152,7 +152,24 @@ class GeminiService:
                 )
                 await asyncio.sleep(delay_seconds)
 
-        raise GeminiStreamError("The AI service is temporarily unavailable.")
+        raise GeminiStreamError("The AI service request timed out after maximum retry attempts. Please try again.")
+
+    @classmethod
+    def _format_actionable_error(cls, error: Exception) -> str:
+        """Format an exception into a clear, actionable user message."""
+        if isinstance(error, APIError):
+            if error.code == 429:
+                return "Gemini API rate limit reached (429). Please wait a moment before trying again."
+            if error.code in (401, 403):
+                return "Gemini API key is invalid or unauthorized (401/403). Please verify your configured API key."
+            if error.code is not None and error.code >= 500:
+                return f"Gemini server experienced a temporary error ({error.code}). Please try again."
+            return f"Gemini API returned error ({error.code}): {error.message}"
+        if isinstance(error, httpx.TimeoutException):
+            return "Connection to Gemini API timed out. Please check your network and try again."
+        if isinstance(error, httpx.RequestError):
+            return "Network connection error while reaching Gemini API. Please verify your internet connection."
+        return "An unexpected AI service error occurred. Please try again."
 
     @staticmethod
     def _is_retryable(error: Exception) -> bool:

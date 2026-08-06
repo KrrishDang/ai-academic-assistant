@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
 import { getGeneratedResults, saveGeneratedResult } from "@/lib/db";
 import { cn } from "@/lib/utils";
+import {
+  parseMCQResponse,
+  parseVivaResponse,
+  parseFlashcardResponse,
+  isRawJsonString
+} from "@/lib/jsonParser";
 import { 
   explainSimply,
   generateFiveMarkAnswer,
@@ -329,50 +335,20 @@ export function WorkspacePage() {
     setTimeout(() => setCopiedResource(false), 2000);
   };
 
-  // Attempt to parse quiz JSON for MCQs inside the modal
-  let quizData: any = null;
-  let parseError = false;
-  if (viewingResource && viewingResource.name === "Generate MCQs" && viewingResource.content) {
-    try {
-      let cleanJson = viewingResource.content.trim();
-      if (cleanJson.startsWith("```")) {
-        cleanJson = cleanJson.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
-      }
-      quizData = JSON.parse(cleanJson);
-    } catch (e) {
-      parseError = true;
-    }
-  }
+  // Safely parse quiz JSON for MCQs inside the modal
+  const quizData = viewingResource && viewingResource.name === "Generate MCQs" && viewingResource.content
+    ? parseMCQResponse(viewingResource.content)
+    : null;
 
-  // Attempt to parse viva JSON for Viva Questions inside the modal
-  let vivaData: any = null;
-  let vivaParseError = false;
-  if (viewingResource && viewingResource.name === "Viva Questions" && viewingResource.content) {
-    try {
-      let cleanJson = viewingResource.content.trim();
-      if (cleanJson.startsWith("```")) {
-        cleanJson = cleanJson.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
-      }
-      vivaData = JSON.parse(cleanJson);
-    } catch (e) {
-      vivaParseError = true;
-    }
-  }
+  // Safely parse viva JSON for Viva Questions inside the modal
+  const vivaData = viewingResource && viewingResource.name === "Viva Questions" && viewingResource.content
+    ? parseVivaResponse(viewingResource.content)
+    : null;
 
-  // Attempt to parse flashcard JSON inside the modal
-  let flashcardData: any = null;
-  let flashcardParseError = false;
-  if (viewingResource && viewingResource.name === "Flashcards" && viewingResource.content) {
-    try {
-      let cleanJson = viewingResource.content.trim();
-      if (cleanJson.startsWith("```")) {
-        cleanJson = cleanJson.replace(/^```[a-zA-Z]*\n/, "").replace(/\n```$/, "");
-      }
-      flashcardData = JSON.parse(cleanJson);
-    } catch (e) {
-      flashcardParseError = true;
-    }
-  }
+  // Safely parse flashcard JSON inside the modal
+  const flashcardData = viewingResource && viewingResource.name === "Flashcards" && viewingResource.content
+    ? parseFlashcardResponse(viewingResource.content)
+    : null;
 
   // ── No active session — show helpful fallback, never blank ──
   if (!activeConversation) {
@@ -1163,7 +1139,29 @@ export function WorkspacePage() {
               ) :
 
               /* Default markdown viewer */
-              (
+              isRawJsonString(viewingResource.content) ? (
+                <div className="p-8 text-center space-y-3 border border-border/60 rounded-xl bg-card/40 my-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+                    <RefreshCw size={18} className="animate-spin-slow" />
+                  </div>
+                  <h4 className="text-sm font-bold text-foreground">Formatting Structured Resource</h4>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                    The generated response structure is being parsed and validated. If it does not display automatically, click regenerate to produce a fresh set.
+                  </p>
+                  <div className="pt-2">
+                    <Button
+                      onClick={() => {
+                        const opt = generationOptions.find(o => o.name === viewingResource.name);
+                        if (opt) generateResource(opt.name, opt.fn);
+                      }}
+                      className="h-8 px-4 text-xs font-bold gap-1.5"
+                    >
+                      <RefreshCw size={12} />
+                      <span>Regenerate {viewingResource.name}</span>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
                 <MarkdownContent content={viewingResource.content} />
               )}
             </div>
