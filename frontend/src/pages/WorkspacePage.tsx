@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useConversations } from "@/features/conversations/ConversationContext";
 import { useDocuments } from "@/features/documents/DocumentContext";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
 import { getGeneratedResults, saveGeneratedResult } from "@/lib/db";
 import { cn } from "@/lib/utils";
@@ -37,7 +36,6 @@ import {
   Copy,
   Download,
   Edit2,
-  WifiOff,
   Maximize2,
   Minimize2,
   PanelRightClose,
@@ -58,7 +56,7 @@ export function WorkspacePage() {
     error 
   } = useConversations();
 
-  const { documents, selectDocument } = useDocuments();
+  const { documents } = useDocuments();
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -4,44 +4,55 @@
 @tailwind components;
 @tailwind utilities;
 
+:root,
+html,
+body,
+.dark,
+[data-theme="catppuccin-mocha"] {
+  color-scheme: dark;
+  /* Official Catppuccin Mocha Palette (Static Global Theme) */
+  --background: 240 21% 15%; /* Base #1E1E2E */
+  --foreground: 226 64% 88%; /* Text #CDD6F4 */
+  --card: 240 21% 12%; /* Mantle #181825 */
+  --card-foreground: 226 64% 88%;
+  --popover: 240 21% 12%; /* Mantle #181825 */
+  --popover-foreground: 226 64% 88%;
+  --primary: 267 84% 81%; /* Mauve #CBA6F7 */
+  --primary-foreground: 240 21% 9%; /* Crust #11111B */
+  --secondary: 240 21% 9%; /* Crust #11111B */
+  --secondary-foreground: 226 64% 88%;
+  --muted: 240 21% 12%;
+  --muted-foreground: 233 10% 47%; /* Overlay0 #6C7086 */
+  --accent: 237 16% 23%; /* Surface0 #313244 */
+  --accent-foreground: 267 84% 81%; /* Mauve #CBA6F7 */
+  --destructive: 343 81% 75%; /* Red #F38BA8 */
+  --destructive-foreground: 240 21% 9%;
+  --border: 237 16% 23%; /* Surface0 #313244 */
+  --input: 235 13% 31%; /* Surface1 #45475A */
+  --ring: 267 84% 81%;
+  --radius: 0.75rem;
+}
+
 @layer base {
-  :root, .dark {
-    /* Official Catppuccin Mocha Palette (Static Global Theme) */
-    --background: 240 21% 15%; /* Base #1E1E2E */
-    --foreground: 226 64% 88%; /* Text #CDD6F4 */
-    --card: 240 21% 12%; /* Mantle #181825 */
-    --card-foreground: 226 64% 88%;
-    --popover: 240 21% 12%; /* Mantle #181825 */
-    --popover-foreground: 226 64% 88%;
-    --primary: 267 84% 81%; /* Mauve #CBA6F7 */
-    --primary-foreground: 240 21% 9%; /* Crust #11111B */
-    --secondary: 240 21% 9%; /* Crust #11111B */
-    --secondary-foreground: 226 64% 88%;
-    --muted: 240 21% 12%;
-    --muted-foreground: 233 10% 47%; /* Overlay0 #6C7086 */
-    --accent: 237 16% 23%; /* Surface0 #313244 */
-    --accent-foreground: 267 84% 81%; /* Mauve #CBA6F7 */
-    --destructive: 343 81% 75%; /* Red #F38BA8 */
-    --destructive-foreground: 240 21% 9%;
-    --border: 237 16% 23%; /* Surface0 #313244 */
-    --input: 235 13% 31%; /* Surface1 #45475A */
-    --ring: 267 84% 81%;
-    --radius: 0.75rem;
-  }
-
-
-
   * {
     @apply border-border;
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* Theme switching color transitions — only on structural elements */
-  *:not(input):not(button):not(select):not(textarea):not(a) {
-    transition: background-color 150ms ease, 
-                border-color 150ms ease, 
-                color 150ms ease,
-                box-shadow 150ms ease;
+  html {
+    color-scheme: dark;
+    background-color: hsl(240 21% 15%);
+    color: hsl(226 64% 88%);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(267, 84%, 81%, 0.08) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(267, 84%, 81%, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -49,23 +60,9 @@
     @apply tracking-tight font-extrabold;
   }
 
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(267, 84%, 81%, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(267, 84%, 81%, 0.04) 0px, transparent 50%);
-    background-attachment: fixed;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  .dark body {
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(267, 84%, 81%, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(267, 84%, 81%, 0.04) 0px, transparent 50%);
-  }
-
   #root {
     min-height: 100vh;
+    background-color: hsl(var(--background));
   }
 }
 

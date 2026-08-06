@@ -134,7 +134,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
 
   const renameDoc = async (id: string, newName: string) => {
     try {
-      const updated = await renameDocument(id, newName);
+      await renameDocument(id, newName);
       const localMeta = await getDocumentMetadata(id);
       if (localMeta) {
         await saveDocumentMetadata({
