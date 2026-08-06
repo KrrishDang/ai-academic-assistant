@@ -46,6 +46,22 @@ class GeminiService:
         self._model = settings.gemini_model
         self._max_retries = settings.gemini_max_retries
 
+    async def generate_text(self, *, instructions: str, input_text: str) -> str:
+        """Generate a complete text block from Gemini for structured JSON parsing."""
+        config = types.GenerateContentConfig(
+            system_instruction=instructions
+        )
+        try:
+            response = await self._client.aio.models.generate_content(
+                model=self._model,
+                contents=input_text,
+                config=config,
+            )
+            return response.text or ""
+        except Exception as error:
+            logger.exception("Gemini non-streaming text generation failed.")
+            raise GeminiStreamError(self._format_actionable_error(error)) from error
+
     async def stream_text(self, *, instructions: str, input_text: str) -> AsyncIterator[str]:
         """Yield text deltas for a single text block, handling retry policies and fallbacks."""
         logger.info(

@@ -1,9 +1,15 @@
-"""Comprehensive backend unit tests for generation, prompt service, and schemas."""
+"""Comprehensive backend unit tests for generation, prompt service, schemas, and JSON parsing."""
 
 import unittest
 from unittest.mock import MagicMock
 from app.services.prompt_service import PromptService
-from app.services.gemini_service import GeminiService, GeminiServiceError
+from app.services.gemini_service import GeminiService
+from app.services.json_parser import (
+    parse_and_validate_mcqs,
+    parse_and_validate_viva,
+    parse_and_validate_flashcards,
+    repair_json_string,
+)
 from app.schemas.document import NotesGenerationRequest
 from google.genai.errors import APIError
 import httpx
@@ -33,6 +39,33 @@ class TestPromptService(unittest.TestCase):
     def test_build_flashcards_prompt(self):
         prompt = self.prompt_service.build_flashcards_prompt()
         self.assertIn("flashcards", prompt)
+
+
+class TestJsonParser(unittest.TestCase):
+    """Test JSON repair and validation parser."""
+
+    def test_repair_json_string(self):
+        raw = "```json\n{\"test\": 123,}\n```"
+        repaired = repair_json_string(raw)
+        self.assertEqual(repaired, "{\"test\": 123}")
+
+    def test_parse_mcqs(self):
+        raw = '{"metadata": {"title": "Quiz"}, "questions": [{"question": "What is Python?", "options": ["A", "B", "C", "D"], "correctAnswer": 0}]}'
+        parsed = parse_and_validate_mcqs(raw)
+        self.assertEqual(parsed.metadata.title, "Quiz")
+        self.assertEqual(len(parsed.questions), 1)
+
+    def test_parse_viva(self):
+        raw = '{"metadata": {"title": "Viva Prep"}, "questions": [{"question": "Explain OOP?", "expectedAnswer": "Object Oriented Programming."}]}'
+        parsed = parse_and_validate_viva(raw)
+        self.assertEqual(parsed.metadata.title, "Viva Prep")
+        self.assertEqual(len(parsed.questions), 1)
+
+    def test_parse_flashcards(self):
+        raw = '{"flashcards": [{"front": "Term", "back": "Definition"}]}'
+        parsed = parse_and_validate_flashcards(raw)
+        self.assertEqual(len(parsed.flashcards), 1)
+        self.assertEqual(parsed.flashcards[0].front, "Term")
 
 
 class TestGeminiServiceErrors(unittest.TestCase):

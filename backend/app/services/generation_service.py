@@ -6,6 +6,15 @@ from app.services.prompt_service import PromptService
 from app.services.gemini_service import GeminiService
 from app.services.chunk_service import ChunkService
 
+from app.services.json_parser import (
+    parse_and_validate_mcqs,
+    parse_and_validate_viva,
+    parse_and_validate_flashcards,
+    MCQResponseSchema,
+    VivaResponseSchema,
+    FlashcardsResponseSchema,
+)
+
 class GenerationService:
     """Orchestrator responsible for coordinating document text, prompts, and Gemini execution pipelines."""
 
@@ -13,6 +22,55 @@ class GenerationService:
         self._gemini_service = gemini_service
         self._prompt_service = PromptService()
         self._chunk_service = ChunkService()
+
+    async def generate_mcqs_structured(self, extracted_text: str) -> dict:
+        """Generate structured MCQs as a validated Pydantic schema object."""
+        instructions = self._prompt_service.build_mcq_prompt()
+        chunk = self._chunk_service.chunk_text(extracted_text)[0]
+        raw_text = await self._gemini_service.generate_text(instructions=instructions, input_text=chunk)
+        try:
+            validated = parse_and_validate_mcqs(raw_text)
+            return {"success": True, "data": validated.model_dump()}
+        except Exception:
+            # Retry once with explicit json hint
+            raw_text_retry = await self._gemini_service.generate_text(
+                instructions=instructions + "\nIMPORTANT: Output ONLY valid raw JSON.",
+                input_text=chunk
+            )
+            validated = parse_and_validate_mcqs(raw_text_retry)
+            return {"success": True, "data": validated.model_dump()}
+
+    async def generate_viva_structured(self, extracted_text: str) -> dict:
+        """Generate structured Viva Questions as a validated Pydantic schema object."""
+        instructions = self._prompt_service.build_viva_prompt()
+        chunk = self._chunk_service.chunk_text(extracted_text)[0]
+        raw_text = await self._gemini_service.generate_text(instructions=instructions, input_text=chunk)
+        try:
+            validated = parse_and_validate_viva(raw_text)
+            return {"success": True, "data": validated.model_dump()}
+        except Exception:
+            raw_text_retry = await self._gemini_service.generate_text(
+                instructions=instructions + "\nIMPORTANT: Output ONLY valid raw JSON.",
+                input_text=chunk
+            )
+            validated = parse_and_validate_viva(raw_text_retry)
+            return {"success": True, "data": validated.model_dump()}
+
+    async def generate_flashcards_structured(self, extracted_text: str) -> dict:
+        """Generate structured Flashcards as a validated Pydantic schema object."""
+        instructions = self._prompt_service.build_flashcards_prompt()
+        chunk = self._chunk_service.chunk_text(extracted_text)[0]
+        raw_text = await self._gemini_service.generate_text(instructions=instructions, input_text=chunk)
+        try:
+            validated = parse_and_validate_flashcards(raw_text)
+            return {"success": True, "data": validated.model_dump()}
+        except Exception:
+            raw_text_retry = await self._gemini_service.generate_text(
+                instructions=instructions + "\nIMPORTANT: Output ONLY valid raw JSON.",
+                input_text=chunk
+            )
+            validated = parse_and_validate_flashcards(raw_text_retry)
+            return {"success": True, "data": validated.model_dump()}
 
     async def stream_study_notes(self, extracted_text: str) -> AsyncIterator[str]:
         """Orchestrate study notes generation for document text, chunking and streaming outputs."""

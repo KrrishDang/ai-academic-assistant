@@ -76,15 +76,36 @@ async def generate_ten_mark(
     stream = await service.stream_ten_mark_answer(request.extracted_text)
     return _stream_response(stream)
 
+def _stream_structured_response(generator_coro) -> StreamingResponse:
+    """Helper to stream validated structured JSON payloads over SSE."""
+    async def event_stream():
+        try:
+            result = await generator_coro
+            # Emit full validated JSON payload
+            json_str = json.dumps(result["data"])
+            yield _sse_event("delta", {"text": json_str})
+            yield _sse_event("done", {})
+        except GeminiServiceError as error:
+            logger.info("Structured study material generation failed: %s", error)
+            yield _sse_event("error", {"message": str(error)})
+        except Exception as error:
+            logger.exception("Structured study material generation failed unexpectedly.")
+            yield _sse_event("error", {"message": f"Generation failed: {error}"})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
 @router.post("/generate/mcqs")
 @router.post("/generation/mcqs")
 async def generate_mcqs(
     request: NotesGenerationRequest,
     service: GenerationService = Depends(get_generation_service),
 ) -> StreamingResponse:
-    """Stream multiple-choice questions (MCQs) and their answers."""
-    stream = await service.stream_mcqs(request.extracted_text)
-    return _stream_response(stream)
+    """Generate structured multiple-choice questions (MCQs) and their answers."""
+    return _stream_structured_response(service.generate_mcqs_structured(request.extracted_text))
 
 @router.post("/generate/viva-questions")
 @router.post("/generation/viva")
@@ -92,9 +113,8 @@ async def generate_viva(
     request: NotesGenerationRequest,
     service: GenerationService = Depends(get_generation_service),
 ) -> StreamingResponse:
-    """Stream viva exam questions with their concise expected answers."""
-    stream = await service.stream_viva_questions(request.extracted_text)
-    return _stream_response(stream)
+    """Generate structured viva exam questions with concise expected answers."""
+    return _stream_structured_response(service.generate_viva_structured(request.extracted_text))
 
 @router.post("/generate/explain-simply")
 @router.post("/generation/explain")
@@ -111,9 +131,8 @@ async def generate_flashcards(
     request: NotesGenerationRequest,
     service: GenerationService = Depends(get_generation_service),
 ) -> StreamingResponse:
-    """Stream flashcards as structured JSON."""
-    stream = await service.stream_flashcards(request.extracted_text)
-    return _stream_response(stream)
+    """Generate structured flashcards."""
+    return _stream_structured_response(service.generate_flashcards_structured(request.extracted_text))
 
 @router.post("/generate/summary")
 async def generate_summary(
