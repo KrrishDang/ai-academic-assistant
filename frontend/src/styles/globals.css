@@ -5,26 +5,26 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Catppuccin Mocha Official Theme (Dark Mode Default) */
-    --background: 240 21% 9%; /* Crust #11111B */
+  :root, .dark {
+    /* Official Catppuccin Mocha Palette (Static Global Theme) */
+    --background: 240 21% 15%; /* Base #1E1E2E */
     --foreground: 226 64% 88%; /* Text #CDD6F4 */
-    --card: 240 21% 15%; /* Base #1E1E2E */
+    --card: 240 21% 12%; /* Mantle #181825 */
     --card-foreground: 226 64% 88%;
     --popover: 240 21% 12%; /* Mantle #181825 */
     --popover-foreground: 226 64% 88%;
     --primary: 267 84% 81%; /* Mauve #CBA6F7 */
     --primary-foreground: 240 21% 9%; /* Crust #11111B */
-    --secondary: 240 21% 12%; /* Mantle #181825 */
+    --secondary: 240 21% 9%; /* Crust #11111B */
     --secondary-foreground: 226 64% 88%;
     --muted: 240 21% 12%;
-    --muted-foreground: 233 10% 47%; /* Muted #6C7086 */
-    --accent: 237 16% 23%; /* Borders #313244 */
-    --accent-foreground: 267 84% 81%;
-    --destructive: 343 81% 75%; /* Error #F38BA8 */
+    --muted-foreground: 233 10% 47%; /* Overlay0 #6C7086 */
+    --accent: 237 16% 23%; /* Surface0 #313244 */
+    --accent-foreground: 267 84% 81%; /* Mauve #CBA6F7 */
+    --destructive: 343 81% 75%; /* Red #F38BA8 */
     --destructive-foreground: 240 21% 9%;
-    --border: 237 16% 23%; /* Borders #313244 */
-    --input: 237 16% 23%;
+    --border: 237 16% 23%; /* Surface0 #313244 */
+    --input: 235 13% 31%; /* Surface1 #45475A */
     --ring: 267 84% 81%;
     --radius: 0.75rem;
   }
