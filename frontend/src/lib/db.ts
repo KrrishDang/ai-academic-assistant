@@ -1,3 +1,5 @@
+import type { MessageResponse } from "./api";
+
 const DB_NAME = "ai_study_platform";
 const DB_VERSION = 1;
 
@@ -12,7 +14,7 @@ export interface DocumentMetadata {
 
 export interface ChatHistory {
   documentId: string;
-  messages: any[];
+  messages: MessageResponse[];
 }
 
 export interface GeneratedResults {
@@ -34,8 +36,9 @@ function openDB(): Promise<IDBDatabase> {
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
 
-    request.onupgradeneeded = (event: any) => {
-      const db = event.target.result;
+    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+      const target = event.target as IDBOpenDBRequest;
+      const db = target.result;
       if (!db.objectStoreNames.contains("metadata")) {
         db.createObjectStore("metadata", { keyPath: "documentId" });
       }
@@ -82,7 +85,7 @@ export async function getAllDocumentsMetadata(): Promise<DocumentMetadata[]> {
   });
 }
 
-export async function saveChatHistory(documentId: string, messages: any[]): Promise<void> {
+export async function saveChatHistory(documentId: string, messages: MessageResponse[]): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("chats", "readwrite");
@@ -93,7 +96,7 @@ export async function saveChatHistory(documentId: string, messages: any[]): Prom
   });
 }
 
-export async function getChatHistory(documentId: string): Promise<any[] | null> {
+export async function getChatHistory(documentId: string): Promise<MessageResponse[] | null> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("chats", "readonly");

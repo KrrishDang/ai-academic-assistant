@@ -31,7 +31,7 @@ class Settings(BaseSettings):
             v = v.strip()
         return v
 
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000,http://localhost:4173"
     log_level: str = "INFO"
     session_secret: str = "generate-a-secure-secret-key-here"
     google_api_key: SecretStr | None = Field(
@@ -56,7 +56,13 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         """Return validated, comma-separated browser origins."""
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        origins = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
+        # Add default local development ports if not already present
+        defaults = ["http://localhost:5173", "http://localhost:3000", "http://localhost:4173"]
+        for d in defaults:
+            if d not in origins:
+                origins.append(d)
+        return origins
 
 
 @lru_cache

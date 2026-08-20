@@ -1,10 +1,26 @@
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
-console.log("VITE_API_BASE_URL =", import.meta.env.VITE_API_BASE_URL);
-console.log("apiBaseUrl =", apiBaseUrl);
-
 export { apiBaseUrl };
+
+export function getAnonymousSessionId(): string {
+  if (typeof window === "undefined") return "server";
+  let id = localStorage.getItem("anonymous_session_id");
+  if (!id) {
+    id = typeof crypto !== "undefined" && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+    localStorage.setItem("anonymous_session_id", id);
+  }
+  return id;
+}
+
+function defaultHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return {
+    "X-Session-ID": getAnonymousSessionId(),
+    ...extra,
+  };
+}
 
 export type UploadError = Error & { status?: number };
 
@@ -56,6 +72,7 @@ export function uploadPdf(
     body.append("file", file);
 
     request.open("POST", `${apiBaseUrl}/documents`);
+    request.setRequestHeader("X-Session-ID", getAnonymousSessionId());
     request.responseType = "json";
 
     request.upload.addEventListener("progress", (event) => {
@@ -108,7 +125,7 @@ export function uploadPdf(
 export async function listDocuments(): Promise<DocumentResponse[]> {
   const response = await fetch(`${apiBaseUrl}/documents`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
   });
 
   if (!response.ok) {
@@ -125,7 +142,7 @@ export async function renameDocument(
 ): Promise<DocumentResponse> {
   const response = await fetch(`${apiBaseUrl}/documents/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ filename }),
   });
 
@@ -141,6 +158,7 @@ export async function renameDocument(
 export async function deleteDocument(id: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/documents/${id}`, {
     method: "DELETE",
+    headers: defaultHeaders(),
   });
 
   if (!response.ok) {
@@ -160,6 +178,7 @@ export function replaceDocument(
     body.append("file", file);
 
     request.open("PUT", `${apiBaseUrl}/documents/${id}`);
+    request.setRequestHeader("X-Session-ID", getAnonymousSessionId());
     request.responseType = "json";
 
     request.upload.addEventListener("progress", (event) => {
@@ -211,7 +230,7 @@ export function replaceDocument(
 /** Fetch list of conversations. */
 export async function listConversations(): Promise<ConversationResponse[]> {
   const response = await fetch(`${apiBaseUrl}/conversations`, {
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
   });
   if (!response.ok) throw new Error("Failed to list conversations.");
   return response.json();
@@ -224,7 +243,7 @@ export async function createConversation(
 ): Promise<ConversationResponse> {
   const response = await fetch(`${apiBaseUrl}/conversations`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ document_id: documentId, title }),
   });
   if (!response.ok) throw new Error("Failed to create conversation.");
@@ -238,7 +257,7 @@ export async function renameConversation(
 ): Promise<ConversationResponse> {
   const response = await fetch(`${apiBaseUrl}/conversations/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ title }),
   });
   if (!response.ok) throw new Error("Failed to rename conversation.");
@@ -249,6 +268,7 @@ export async function renameConversation(
 export async function deleteConversation(id: string): Promise<void> {
   const response = await fetch(`${apiBaseUrl}/conversations/${id}`, {
     method: "DELETE",
+    headers: defaultHeaders(),
   });
   if (!response.ok) throw new Error("Failed to delete conversation.");
 }
@@ -258,7 +278,7 @@ export async function getConversationMessages(
   id: string,
 ): Promise<MessageResponse[]> {
   const response = await fetch(`${apiBaseUrl}/conversations/${id}/messages`, {
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
   });
   if (!response.ok) throw new Error("Failed to load messages.");
   return response.json();
@@ -276,7 +296,7 @@ export async function* chatInConversation(
     `${apiBaseUrl}/conversations/${conversationId}/chat`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ message, model, temperature }),
       signal,
     },
@@ -395,7 +415,7 @@ async function* streamGeneration(
 ): AsyncGenerator<GenerationEvent> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ extracted_text: extractedText }),
     signal,
   });
@@ -474,7 +494,7 @@ export async function* editAndRegenerateMessage(
     `${apiBaseUrl}/conversations/${conversationId}/edit-message/${messageId}`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({ message, model, temperature }),
       signal,
     },
@@ -531,6 +551,7 @@ export async function deleteMessage(
     `${apiBaseUrl}/conversations/${conversationId}/messages/${messageId}`,
     {
       method: "DELETE",
+      headers: defaultHeaders(),
     },
   );
   if (!response.ok) throw new Error("Failed to delete message.");
@@ -556,7 +577,7 @@ export type DashboardStatsResponse = {
 /** Fetch workspace overview statistics and recent activities. */
 export async function getDashboardStats(): Promise<DashboardStatsResponse> {
   const response = await fetch(`${apiBaseUrl}/dashboard/stats`, {
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders({ "Content-Type": "application/json" }),
   });
   if (!response.ok) throw new Error("Failed to load dashboard statistics.");
   return response.json();
@@ -583,7 +604,7 @@ export async function executeGlobalSearch(
   const response = await fetch(
     `${apiBaseUrl}/search?q=${encodeURIComponent(query)}`,
     {
-      headers: { "Content-Type": "application/json" },
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
     },
   );
   if (!response.ok) throw new Error("Failed to execute search query.");

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FolderOpen,
   FileText,
@@ -8,14 +8,15 @@ import {
   Trash2,
   Search,
   Plus,
+  type LucideIcon
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useConversations } from "@/features/conversations/ConversationContext";
-import { useDocuments } from "@/features/documents/DocumentContext";
-import { getAllGeneratedResults } from "@/lib/db";
+import { useDocuments, type EnrichedDocument } from "@/features/documents/DocumentContext";
+import { getAllGeneratedResults, type GeneratedResults } from "@/lib/db";
 import {
   getDashboardStats,
   type DashboardStatsResponse,
@@ -35,7 +36,7 @@ export function DashboardPage() {
   const [statsLoading, setStatsLoading] = useState(true);
 
   // ── Silent stats fetch with automatic local fallback ──────────────
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
       const data = await getDashboardStats();
@@ -45,7 +46,7 @@ export function DashboardPage() {
       try {
         const allCached = await getAllGeneratedResults();
         let totalAI = 0;
-        allCached.forEach((res: any) => {
+        allCached.forEach((res: GeneratedResults) => {
           if (res.notes) totalAI++;
           if (res.mcqs) totalAI++;
           if (res.viva) totalAI++;
@@ -77,14 +78,14 @@ export function DashboardPage() {
     } finally {
       setStatsLoading(false);
     }
-  };
+  }, [conversations.length, documents.length]);
 
   useEffect(() => {
     fetchStats();
-  }, [documents.length, conversations.length]);
+  }, [fetchStats]);
 
   // ── Handlers ──────────────────────────────────────────────────────
-  const handleSelectDoc = async (doc: any) => {
+  const handleSelectDoc = async (doc: EnrichedDocument) => {
     await selectDocument(doc);
     const existing = conversations.find((c) => c.document_id === doc.id);
     if (existing) {
@@ -304,7 +305,7 @@ function SummaryCard({
   subtext,
   isLoading,
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: string;
   subtext?: string;

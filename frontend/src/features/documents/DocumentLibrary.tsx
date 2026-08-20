@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useDocuments } from "./DocumentContext";
+import { useDocuments, type EnrichedDocument } from "./DocumentContext";
 import { useConversations } from "@/features/conversations/ConversationContext";
 import { 
   FileText, 
@@ -38,7 +38,7 @@ export function DocumentLibrary() {
   const [replaceProgress, setReplaceProgress] = useState(0);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const handleSelect = async (doc: any) => {
+  const handleSelect = async (doc: EnrichedDocument) => {
     selectDocument(doc);
     const existing = conversations.find((c) => c.document_id === doc.id);
     if (existing) {

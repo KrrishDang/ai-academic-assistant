@@ -41,7 +41,7 @@ class DocumentService:
         self._pdf_service = PdfService(max_pages=settings.max_pdf_pages)
         self._storage = create_document_storage(settings)
 
-    async def process(self, file: UploadFile, db: Session) -> Document:
+    async def process(self, file: UploadFile, db: Session, session_id: str | None = None) -> Document:
         """Validate, extract, store the PDF file and save metadata to DB."""
         doc_id = uuid.uuid4()
         staged_upload = await self._stage_upload(file)
@@ -58,8 +58,11 @@ class DocumentService:
                     sha256_hash.update(chunk)
             file_sha = sha256_hash.hexdigest()
 
-            # Check for duplicate upload
-            existing_doc = db.query(Document).filter(Document.sha256 == file_sha).first()
+            # Check for duplicate upload in session if session_id is provided, else overall
+            query = db.query(Document).filter(Document.sha256 == file_sha)
+            if session_id:
+                query = query.filter(Document.session_id == session_id)
+            existing_doc = query.first()
             if existing_doc:
                 logger.info(
                     "Duplicate upload detected. Returning existing document. ID: %s, Filename: %s",
@@ -83,6 +86,7 @@ class DocumentService:
                 storage_key=storage_key,
                 sha256=file_sha,
                 extracted_text=extracted.text,
+                session_id=session_id,
             )
 
             db.add(document_record)

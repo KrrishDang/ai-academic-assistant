@@ -5,13 +5,14 @@ import { useConversations } from "@/features/conversations/ConversationContext";
 import { useDocuments } from "@/features/documents/DocumentContext";
 import { Button } from "@/components/ui/button";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
-import { getGeneratedResults, saveGeneratedResult } from "@/lib/db";
+import { getGeneratedResults, saveGeneratedResult, type GeneratedResults } from "@/lib/db";
 import { cn } from "@/lib/utils";
 import {
   parseMCQResponse,
   parseVivaResponse,
   parseFlashcardResponse,
-  isRawJsonString
+  isRawJsonString,
+  type MCQQuestion
 } from "@/lib/jsonParser";
 import { 
   explainSimply,
@@ -21,7 +22,9 @@ import {
   generateTenMarkAnswer,
   generateVivaQuestions,
   generateFlashcards,
-  generateSummary
+  generateSummary,
+  type GenerationEvent,
+  type MessageResponse
 } from "@/lib/api";
 import { 
   FileText, 
@@ -62,7 +65,7 @@ export function WorkspacePage() {
     error 
   } = useConversations();
 
-  const { documents } = useDocuments();
+  const { documents, loading: documentsLoading } = useDocuments();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -89,7 +92,6 @@ export function WorkspacePage() {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const userHasScrolledUp = useRef(false);
-  const prevMessagesLength = useRef(0);
 
   // Message Actions state
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -171,19 +173,19 @@ export function WorkspacePage() {
     : null;
 
   // Generated results cached locally
-  const [cachedResults, setCachedResults] = useState<any>(null);
+  const [cachedResults, setCachedResults] = useState<Record<string, string> | null>(null);
   const [generatingResource, setGeneratingResource] = useState<string | null>(null);
 
-  const loadSavedResults = async () => {
+  const loadSavedResults = useCallback(async () => {
     if (linkedDoc) {
       const saved = await getGeneratedResults(linkedDoc.id);
-      setCachedResults(saved);
+      setCachedResults(saved as unknown as Record<string, string>);
     }
-  };
+  }, [linkedDoc]);
 
   useEffect(() => {
     loadSavedResults();
-  }, [linkedDoc]);
+  }, [loadSavedResults]);
 
   // ── Smart Chat Auto-Scroll System ──────────────────────────────
   const prevConversationId = useRef<string | null>(null);
@@ -242,7 +244,7 @@ export function WorkspacePage() {
     return () => observer.disconnect();
   }, [isFocusMode]);
 
-  async function generateResource(name: string, fn: any) {
+  async function generateResource(name: string, fn: (text: string) => AsyncGenerator<GenerationEvent>) {
     if (!linkedDoc) return;
     setGeneratingResource(name);
     
@@ -261,7 +263,7 @@ export function WorkspacePage() {
       if (finalContent) {
         const activeKey = keyMap[name];
         if (activeKey) {
-          await saveGeneratedResult(linkedDoc.id, activeKey as any, finalContent);
+          await saveGeneratedResult(linkedDoc.id, activeKey as keyof Omit<GeneratedResults, "documentId">, finalContent);
           await loadSavedResults();
         }
       }
@@ -288,7 +290,7 @@ export function WorkspacePage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleDownload = (msg: any) => {
+  const handleDownload = (msg: MessageResponse) => {
     const blob = new Blob([msg.content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -350,29 +352,40 @@ export function WorkspacePage() {
     ? parseFlashcardResponse(viewingResource.content)
     : null;
 
-  // ── No active session — show helpful fallback, never blank ──
+  // ── No active conversation — show start chat or upload card ──
   if (!activeConversation) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
-        <div className="max-w-sm text-center space-y-4 p-8 bg-card border border-border/60 rounded-2xl">
-          <div className="text-4xl">📄</div>
-          <h2 className="text-lg font-extrabold tracking-tight">No Document Open</h2>
+        <div className="max-w-md text-center space-y-5 p-8 bg-card border border-border/60 rounded-2xl shadow-lg">
+          <div className="text-4xl">🤖</div>
+          <h2 className="text-lg font-extrabold tracking-tight">AI Study Assistant</h2>
           <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-            Select a document from the dashboard to start studying with the AI Tutor.
+            Start a new study conversation or select an uploaded document from the dashboard.
           </p>
-          <Button
-            onClick={() => navigate("/")}
-            className="h-9 px-5 text-xs font-bold"
-          >
-            Go to Dashboard
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <Button
+              onClick={() => sendChatMessage("Hello! Help me get started with my study session.")}
+              className="h-9 px-5 text-xs font-bold gap-1.5"
+            >
+              <Bot size={15} />
+              <span>Start AI Tutor Chat</span>
+            </Button>
+            <Button
+              onClick={() => navigate("/upload")}
+              variant="outline"
+              className="h-9 px-5 text-xs font-bold gap-1.5"
+            >
+              <FileText size={15} />
+              <span>Upload Document</span>
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   // ── Documents still loading — show skeleton ──
-  if (!linkedDoc) {
+  if (!linkedDoc && documentsLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
         <div className="flex flex-col items-center gap-3">
@@ -393,15 +406,23 @@ export function WorkspacePage() {
         {/* Header bar */}
         <header className="flex items-center justify-between px-5 py-3.5 border-b border-border/40 bg-card/65 backdrop-blur-sm shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="text-xl shrink-0">📄</span>
+            <span className="text-xl shrink-0">{linkedDoc ? "📄" : "🤖"}</span>
             <div className="flex flex-col min-w-0">
-              <h2 className="text-sm font-extrabold text-foreground truncate">{linkedDoc.filename}</h2>
+              <h2 className="text-sm font-extrabold text-foreground truncate">
+                {linkedDoc ? linkedDoc.filename : (activeConversation.title || "General AI Study Assistant")}
+              </h2>
               <div className="flex items-center gap-2 mt-0.5 text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                <span>PDF</span>
-                <span>•</span>
-                <span>{linkedDoc.page_count} Pages</span>
-                <span>•</span>
-                <span>Last opened {linkedDoc.lastOpened ? new Date(linkedDoc.lastOpened).toLocaleDateString() : "Never"}</span>
+                {linkedDoc ? (
+                  <>
+                    <span>PDF</span>
+                    <span>•</span>
+                    <span>{linkedDoc.page_count} Pages</span>
+                    <span>•</span>
+                    <span>Last opened {linkedDoc.lastOpened ? new Date(linkedDoc.lastOpened).toLocaleDateString() : "Never"}</span>
+                  </>
+                ) : (
+                  <span>General Academic Assistant Chat</span>
+                )}
               </div>
             </div>
           </div>
@@ -863,7 +884,7 @@ export function WorkspacePage() {
                     
                     <div className="border-t border-border/60 pt-4 space-y-4">
                       <h4 className="font-bold text-sm">Review Questions:</h4>
-                      {quizData.questions.map((q: any, idx: number) => {
+                      {quizData.questions.map((q: MCQQuestion, idx: number) => {
                         const userAns = quizAnswers[idx];
                         const isCorrect = userAns === q.correctAnswer;
                         return (

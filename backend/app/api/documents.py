@@ -4,7 +4,7 @@ import logging
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
@@ -26,12 +26,13 @@ router = APIRouter(prefix="/documents")
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
+    x_session_id: str | None = Header(None, alias="X-Session-ID"),
     db: Session = Depends(get_db_session),
 ) -> DocumentUploadResponse:
     """Stage, parse, and store one PDF document."""
     settings = get_settings()
     try:
-        document = await DocumentService(settings).process(file, db)
+        document = await DocumentService(settings).process(file, db, session_id=x_session_id)
         return DocumentUploadResponse(
             id=document.id,
             filename=document.original_filename,
@@ -49,14 +50,14 @@ async def upload_document(
 
 @router.get("", response_model=List[DocumentResponse])
 def list_documents(
+    x_session_id: str | None = Header(None, alias="X-Session-ID"),
     db: Session = Depends(get_db_session),
 ) -> List[Document]:
     """List all persistent documents in the library."""
-    return (
-        db.query(Document)
-        .order_by(Document.created_at.desc())
-        .all()
-    )
+    query = db.query(Document)
+    if x_session_id:
+        query = query.filter((Document.session_id == x_session_id) | (Document.session_id.is_(None)))
+    return query.order_by(Document.created_at.desc()).all()
 
 @router.patch("/{id}", response_model=DocumentResponse)
 def rename_document(

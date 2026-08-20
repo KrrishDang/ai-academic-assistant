@@ -32,6 +32,7 @@ router = APIRouter(prefix="/conversations")
 @router.post("", response_model=ConversationResponse, status_code=status.HTTP_201_CREATED)
 def create_conversation(
     request: ConversationCreateRequest,
+    x_session_id: str | None = Header(None, alias="X-Session-ID"),
     db: Session = Depends(get_db_session),
 ) -> Conversation:
     """Create a new chat conversation, optionally linked to a specific document context."""
@@ -42,7 +43,8 @@ def create_conversation(
 
     conversation = Conversation(
         document_id=request.document_id,
-        title=request.title,
+        title=request.title or (doc.original_filename if request.document_id and 'doc' in locals() and doc else "General Chat"),
+        session_id=x_session_id,
     )
     db.add(conversation)
     db.commit()
@@ -51,11 +53,15 @@ def create_conversation(
 
 @router.get("", response_model=List[ConversationResponse])
 def list_conversations(
+    x_session_id: str | None = Header(None, alias="X-Session-ID"),
     db: Session = Depends(get_db_session),
 ) -> List[Conversation]:
     """Retrieve all conversations, ordered by latest activity."""
+    query = db.query(Conversation)
+    if x_session_id:
+        query = query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
     return (
-        db.query(Conversation)
+        query
         .order_by(Conversation.updated_at.desc())
         .all()
     )

@@ -63,7 +63,7 @@ export function repairJsonString(input: string): string {
   }
 
   // Find first opening brace/bracket and last closing brace/bracket
-  const firstBrace = cleaned.search(/[\{\[]/);
+  const firstBrace = cleaned.search(/[{[]/);
   if (firstBrace !== -1) {
     const lastBrace = Math.max(cleaned.lastIndexOf("}"), cleaned.lastIndexOf("]"));
     if (lastBrace > firstBrace) {
@@ -74,9 +74,10 @@ export function repairJsonString(input: string): string {
   }
 
   // Replace trailing commas before closing braces/brackets
-  cleaned = cleaned.replace(/,\s*([\}\]])/g, "$1");
+  cleaned = cleaned.replace(/,\s*([}\]])/g, "$1");
 
   // Fix unescaped control characters in strings
+  /* eslint-disable-next-line no-control-regex */
   cleaned = cleaned.replace(/[\u0000-\u001F\u007F-\u009F]/g, (c) => {
     if (c === "\n") return "\\n";
     if (c === "\r") return "\\r";
@@ -123,7 +124,7 @@ export function repairJsonString(input: string): string {
 export function parseMCQResponse(rawInput: string | object): MCQResponse | null {
   if (!rawInput) return null;
 
-  let obj: any = rawInput;
+  let obj: Record<string, unknown> | null = null;
   if (typeof rawInput === "string") {
     try {
       obj = JSON.parse(rawInput);
@@ -135,6 +136,8 @@ export function parseMCQResponse(rawInput: string | object): MCQResponse | null 
         return null;
       }
     }
+  } else if (typeof rawInput === "object") {
+    obj = rawInput as Record<string, unknown>;
   }
 
   if (!obj || typeof obj !== "object") return null;
@@ -142,9 +145,10 @@ export function parseMCQResponse(rawInput: string | object): MCQResponse | null 
   const rawQuestions = Array.isArray(obj.questions) ? obj.questions : Array.isArray(obj) ? obj : [];
   if (rawQuestions.length === 0) return null;
 
-  const validatedQuestions: MCQQuestion[] = rawQuestions.map((q: any, index: number) => {
+  const validatedQuestions: MCQQuestion[] = rawQuestions.map((qItem: unknown, index: number) => {
+    const q = (typeof qItem === "object" && qItem !== null ? qItem : {}) as Record<string, unknown>;
     const opts = Array.isArray(q.options)
-      ? q.options.map((o: any) => String(o || ""))
+      ? q.options.map((o: unknown) => String(o || ""))
       : ["Option A", "Option B", "Option C", "Option D"];
 
     let correctIdx = typeof q.correctAnswer === "number" ? q.correctAnswer : 0;
@@ -161,11 +165,13 @@ export function parseMCQResponse(rawInput: string | object): MCQResponse | null 
     };
   });
 
+  const meta = (typeof obj.metadata === "object" && obj.metadata !== null ? obj.metadata : {}) as Record<string, unknown>;
+
   return {
     metadata: {
-      title: String(obj.metadata?.title || "Multiple Choice Quiz"),
+      title: String(meta.title || "Multiple Choice Quiz"),
       totalQuestions: validatedQuestions.length,
-      estimatedTime: String(obj.metadata?.estimatedTime || `${Math.ceil(validatedQuestions.length * 0.8)} mins`)
+      estimatedTime: String(meta.estimatedTime || `${Math.ceil(validatedQuestions.length * 0.8)} mins`)
     },
     questions: validatedQuestions
   };
@@ -177,7 +183,7 @@ export function parseMCQResponse(rawInput: string | object): MCQResponse | null 
 export function parseVivaResponse(rawInput: string | object): VivaResponse | null {
   if (!rawInput) return null;
 
-  let obj: any = rawInput;
+  let obj: Record<string, unknown> | null = null;
   if (typeof rawInput === "string") {
     try {
       obj = JSON.parse(rawInput);
@@ -189,6 +195,8 @@ export function parseVivaResponse(rawInput: string | object): VivaResponse | nul
         return null;
       }
     }
+  } else if (typeof rawInput === "object") {
+    obj = rawInput as Record<string, unknown>;
   }
 
   if (!obj || typeof obj !== "object") return null;
@@ -196,18 +204,23 @@ export function parseVivaResponse(rawInput: string | object): VivaResponse | nul
   const rawQuestions = Array.isArray(obj.questions) ? obj.questions : Array.isArray(obj) ? obj : [];
   if (rawQuestions.length === 0) return null;
 
-  const validatedQuestions: VivaQuestion[] = rawQuestions.map((q: any, index: number) => ({
-    id: typeof q.id === "number" ? q.id : index + 1,
-    question: String(q.question || `Viva Question ${index + 1}`),
-    expectedAnswer: String(q.expectedAnswer || q.answer || "No response provided."),
-    keyPoints: Array.isArray(q.keyPoints) ? q.keyPoints.map((k: any) => String(k)) : [],
-    difficulty: String(q.difficulty || "Medium"),
-    topic: String(q.topic || "General")
-  }));
+  const validatedQuestions: VivaQuestion[] = rawQuestions.map((qItem: unknown, index: number) => {
+    const q = (typeof qItem === "object" && qItem !== null ? qItem : {}) as Record<string, unknown>;
+    return {
+      id: typeof q.id === "number" ? q.id : index + 1,
+      question: String(q.question || `Viva Question ${index + 1}`),
+      expectedAnswer: String(q.expectedAnswer || q.answer || "No response provided."),
+      keyPoints: Array.isArray(q.keyPoints) ? q.keyPoints.map((k: unknown) => String(k)) : [],
+      difficulty: String(q.difficulty || "Medium"),
+      topic: String(q.topic || "General")
+    };
+  });
+
+  const meta = (typeof obj.metadata === "object" && obj.metadata !== null ? obj.metadata : {}) as Record<string, unknown>;
 
   return {
     metadata: {
-      title: String(obj.metadata?.title || "Viva Exam Preparation"),
+      title: String(meta.title || "Viva Exam Preparation"),
       totalQuestions: validatedQuestions.length
     },
     questions: validatedQuestions
@@ -220,7 +233,7 @@ export function parseVivaResponse(rawInput: string | object): VivaResponse | nul
 export function parseFlashcardResponse(rawInput: string | object): FlashcardResponse | null {
   if (!rawInput) return null;
 
-  let obj: any = rawInput;
+  let obj: Record<string, unknown> | null = null;
   if (typeof rawInput === "string") {
     try {
       obj = JSON.parse(rawInput);
@@ -232,6 +245,8 @@ export function parseFlashcardResponse(rawInput: string | object): FlashcardResp
         return null;
       }
     }
+  } else if (typeof rawInput === "object") {
+    obj = rawInput as Record<string, unknown>;
   }
 
   if (!obj || typeof obj !== "object") return null;
@@ -246,10 +261,13 @@ export function parseFlashcardResponse(rawInput: string | object): FlashcardResp
 
   if (rawCards.length === 0) return null;
 
-  const validatedCards: Flashcard[] = rawCards.map((c: any, index: number) => ({
-    front: String(c.front || c.question || c.term || `Flashcard ${index + 1}`),
-    back: String(c.back || c.answer || c.definition || "No details provided.")
-  }));
+  const validatedCards: Flashcard[] = rawCards.map((cItem: unknown, index: number) => {
+    const c = (typeof cItem === "object" && cItem !== null ? cItem : {}) as Record<string, unknown>;
+    return {
+      front: String(c.front || c.question || c.term || `Flashcard ${index + 1}`),
+      back: String(c.back || c.answer || c.definition || "No details provided.")
+    };
+  });
 
   return {
     flashcards: validatedCards

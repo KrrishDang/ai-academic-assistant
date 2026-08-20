@@ -1,6 +1,7 @@
 """Comprehensive backend unit tests for generation, prompt service, schemas, and JSON parsing."""
 
 import unittest
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 from app.services.prompt_service import PromptService
 from app.services.gemini_service import GeminiService
@@ -11,6 +12,7 @@ from app.services.json_parser import (
     repair_json_string,
 )
 from app.schemas.document import NotesGenerationRequest
+from app.api.dashboard import _ensure_tz_aware
 from google.genai.errors import APIError
 import httpx
 
@@ -95,6 +97,20 @@ class TestGeminiServiceErrors(unittest.TestCase):
         err = httpx.RequestError("Network fail")
         msg = GeminiService._format_actionable_error(err)
         self.assertIn("Network connection error", msg)
+
+
+class TestDashboardStats(unittest.TestCase):
+    """Test timezone normalization and dashboard helpers."""
+
+    def test_ensure_tz_aware_none(self):
+        dt = _ensure_tz_aware(None)
+        self.assertIsNotNone(dt)
+        self.assertEqual(dt.tzinfo, timezone.utc)
+
+    def test_ensure_tz_aware_naive(self):
+        naive = datetime(2026, 8, 20, 10, 0, 0)
+        dt = _ensure_tz_aware(naive)
+        self.assertEqual(dt.tzinfo, timezone.utc)
 
 
 class TestSchemas(unittest.TestCase):

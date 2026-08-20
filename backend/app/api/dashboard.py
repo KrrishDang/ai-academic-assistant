@@ -1,8 +1,8 @@
 """Dashboard statistics and overview API router."""
 
-from datetime import timezone as tz
+from datetime import datetime, timezone as tz
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db_session
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/dashboard")
 def _ensure_tz_aware(dt):
     """Normalize a datetime to UTC-aware. Handles None and naive datetimes."""
     if dt is None:
-        return None
+        return datetime.min.replace(tzinfo=tz.utc)
     if dt.tzinfo is None:
         return dt.replace(tzinfo=tz.utc)
     return dt
@@ -24,29 +24,37 @@ def _ensure_tz_aware(dt):
 
 @router.get("/stats", response_model=DashboardStatsResponse)
 def get_dashboard_stats(
+    x_session_id: str | None = Header(None, alias="X-Session-ID"),
     db: Session = Depends(get_db_session),
 ) -> dict:
     """Retrieve summarized workspace usage metrics and recent activity streams."""
-    total_docs = db.query(Document).count()
-    total_convs = db.query(Conversation).count()
+    doc_query = db.query(Document)
+    conv_query = db.query(Conversation)
+    msg_query = db.query(Message).join(Conversation)
 
-    # Count assistant messages as a proxy for total AI chat generations
+    if x_session_id:
+        doc_query = doc_query.filter((Document.session_id == x_session_id) | (Document.session_id.is_(None)))
+        conv_query = conv_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
+        msg_query = msg_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
+
+    total_docs = doc_query.count()
+    total_convs = conv_query.count()
+
     total_ai = (
-        db.query(Message)
-        .join(Conversation)
+        msg_query
         .filter(Message.role == "assistant")
         .count()
     )
 
     recent_convs = (
-        db.query(Conversation)
+        conv_query
         .order_by(Conversation.updated_at.desc())
         .limit(5)
         .all()
     )
 
     recent_docs = (
-        db.query(Document)
+        doc_query
         .order_by(Document.created_at.desc())
         .limit(5)
         .all()
@@ -71,8 +79,8 @@ def get_dashboard_stats(
             "timestamp": _ensure_tz_aware(conv.created_at),
         })
 
-    # Sort recent activities by timestamp descending, capped at 6 items
-    activities.sort(key=lambda x: x["timestamp"] or _ensure_tz_aware(x["timestamp"]), reverse=True)
+    # Sort recent activities by timestamp descending cleanly
+    activities.sort(key=lambda x: x["timestamp"], reverse=True)
     recent_activities = activities[:6]
 
     return {
@@ -83,4 +91,3 @@ def get_dashboard_stats(
         "recent_documents": recent_docs,
         "recent_activities": recent_activities,
     }
-

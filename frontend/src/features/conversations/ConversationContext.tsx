@@ -59,6 +59,15 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
     try {
       const convs = await listConversations();
       setConversations(convs);
+      if (convs.length > 0) {
+        setActiveConversation((current) => {
+          if (!current) {
+            sessionStorage.setItem("activeConversation", JSON.stringify(convs[0]));
+            return convs[0];
+          }
+          return current;
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load chats.");
     } finally {
@@ -181,7 +190,15 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const sendChatMessage = async (messageText: string) => {
-    if (!activeConversation) return;
+    let targetConv = activeConversation;
+    if (!targetConv) {
+      try {
+        targetConv = await createNewConversation(null, "General Study Assistant");
+      } catch {
+        setError("Unable to start a new chat conversation. Please try again.");
+        return;
+      }
+    }
 
     // Create abort controller for streaming chat cancellation
     const controller = new AbortController();
@@ -192,7 +209,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
     // 1. Instantly append user message to local state
     const userMsg: MessageResponse = {
       id: Math.random().toString(),
-      conversation_id: activeConversation.id,
+      conversation_id: targetConv.id,
       role: "user",
       content: messageText,
       created_at: new Date().toISOString(),
@@ -203,7 +220,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
     const assistantMsgId = Math.random().toString();
     const assistantMsgPlaceholder: MessageResponse = {
       id: assistantMsgId,
-      conversation_id: activeConversation.id,
+      conversation_id: targetConv.id,
       role: "assistant",
       content: "",
       created_at: new Date().toISOString(),
@@ -217,7 +234,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
     let fullAiResponse = "";
     try {
       const generator = chatInConversation(
-        activeConversation.id, 
+        targetConv.id, 
         messageText, 
         modelSetting, 
         tempSetting, 
@@ -239,11 +256,11 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
       }
 
       // After generation is completed, reload the actual message records from DB to sync the IDs
-      const syncedMsgs = await getConversationMessages(activeConversation.id);
+      const syncedMsgs = await getConversationMessages(targetConv.id);
       setMessages(syncedMsgs);
 
-      if (activeConversation.document_id) {
-        await saveChatHistory(activeConversation.document_id, syncedMsgs);
+      if (targetConv.document_id) {
+        await saveChatHistory(targetConv.document_id, syncedMsgs);
       }
 
       // Move conversation to top of list as it was updated

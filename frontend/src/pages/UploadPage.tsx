@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { DocumentUpload } from "@/features/documents/DocumentUpload";
-import { useDocuments } from "@/features/documents/DocumentContext";
+import { useDocuments, type EnrichedDocument } from "@/features/documents/DocumentContext";
 import { useConversations } from "@/features/conversations/ConversationContext";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export function UploadPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSelectDoc = async (doc: any) => {
+  const handleSelectDoc = async (doc: EnrichedDocument) => {
     await selectDocument(doc);
     const existing = conversations.find((c) => c.document_id === doc.id);
     if (existing) {
