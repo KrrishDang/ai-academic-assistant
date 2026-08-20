@@ -8,6 +8,11 @@ import {
   Trash2,
   Search,
   Plus,
+  Zap,
+  Sparkles,
+  Award,
+  CheckCircle2,
+  Clock,
   type LucideIcon
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +27,7 @@ import {
   type DashboardStatsResponse,
 } from "@/lib/api";
 
-/** Dashboard — overview page. Never renders the AI Tutor chat. */
+/** Dashboard — overview page. Never renders the AI Tutor chat directly. */
 export function DashboardPage() {
   const { conversations, selectConversation, createNewConversation } =
     useConversations();
@@ -65,7 +70,6 @@ export function DashboardPage() {
           recent_activities: [],
         });
       } catch {
-        // Even the local fallback failed — show zeros, stay silent
         setStats({
           total_documents: documents.length,
           total_conversations: conversations.length,
@@ -99,205 +103,274 @@ export function DashboardPage() {
   const handleDeleteDoc = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this document?")) {
-      try {
-        await deleteDoc(id);
-      } catch {
-        /* handled by context */
-      }
+      await deleteDoc(id);
+      fetchStats();
     }
   };
 
-  const filteredDocuments = documents.filter((doc) =>
-    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredDocs = documents.filter((d) =>
+    d.filename.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ── Empty state — first‐time welcome ─────────────────────────────
-  if (documents.length === 0) {
-    return (
-      <div className="space-y-8 animate-fade-in flex flex-col justify-center min-h-[60vh]">
-        <div className="max-w-md mx-auto text-center py-12 space-y-6 bg-card border border-border/60 rounded-2xl p-8 shadow-lg">
-          <div className="text-5xl">📄</div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
-            Welcome to Study Hub
-          </h2>
-          <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-            Upload your first document to start chatting with your AI Tutor and
-            generate study materials.
+  return (
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* ── Top Hero Welcome Banner ────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-card via-card/90 to-primary/10 border border-border/80 p-6 sm:p-8 md:p-10 shadow-xl">
+        <div className="relative z-10 space-y-4 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[11px] font-bold text-primary uppercase tracking-wider">
+            <Sparkles size={13} />
+            <span>AI Academic Workspace</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
+            Elevate Your Study Workflow with <span className="text-primary">Gemini AI</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium leading-relaxed">
+            Upload PDF notes, ask questions with contextual streaming chat, and generate exam prep materials instantly.
           </p>
-          <div className="pt-2">
+
+          <div className="flex flex-wrap gap-3 pt-2">
             <Button
-              onClick={() => navigate("/upload")}
-              className="h-10 px-6 font-bold flex items-center justify-center gap-1.5 mx-auto active:scale-[0.98] transition-all shadow-md"
+              onClick={() => navigate("/documents")}
+              className="h-10 px-5 text-xs font-bold gap-2 shadow-lg shadow-primary/20"
             >
               <Plus size={16} />
-              <span>Upload Document</span>
+              <span>Upload New PDF</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/workspace")}
+              variant="outline"
+              className="h-10 px-5 text-xs font-bold gap-2 border-border/80 bg-card/60 backdrop-blur-sm"
+            >
+              <MessageSquare size={16} />
+              <span>Start AI Tutor Chat</span>
+            </Button>
+
+            <Button
+              onClick={() => navigate("/tools")}
+              variant="ghost"
+              className="h-10 px-4 text-xs font-bold gap-2 text-primary hover:text-primary hover:bg-primary/10"
+            >
+              <Zap size={15} />
+              <span>Explore AI Tools</span>
             </Button>
           </div>
         </div>
       </div>
-    );
-  }
 
-  // ── Main dashboard ───────────────────────────────────────────────
-  return (
-    <div className="space-y-8 animate-fade-in relative pb-10">
-      {/* Header */}
-      <header className="space-y-1">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#b4befe]">
-          Dashboard
-        </p>
-        <h1 className="text-2xl font-extrabold tracking-tight">Welcome Back</h1>
-        <p className="text-muted-foreground text-xs font-medium">
-          Continue where you left off or upload a new document.
-        </p>
-      </header>
-
-      {/* Stats row */}
-      <section className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+      {/* ── Summary Stats Row ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
-          icon={FolderOpen}
-          label="Documents"
-          value={stats ? `${stats.total_documents}` : `${documents.length}`}
+          icon={FileText}
+          label="Uploaded Notes"
+          value={statsLoading ? "..." : String(stats?.total_documents ?? documents.length)}
+          subtext="Processed PDF documents"
           isLoading={statsLoading}
-          subtext="Documents in your library"
         />
         <SummaryCard
           icon={MessageSquare}
-          label="AI Conversations"
-          value={
-            stats ? `${stats.total_conversations}` : `${conversations.length}`
-          }
+          label="Active Conversations"
+          value={statsLoading ? "..." : String(stats?.total_conversations ?? conversations.length)}
+          subtext="Saved chat threads"
           isLoading={statsLoading}
-          subtext="Document conversations"
         />
         <SummaryCard
           icon={BrainCircuit}
-          label="Study Materials"
-          value={stats ? `${stats.total_ai_generations}` : "0"}
+          label="AI Study Outputs"
+          value={statsLoading ? "..." : String(stats?.total_ai_generations ?? 0)}
+          subtext="Generated notes & quizzes"
           isLoading={statsLoading}
-          subtext="Generated resources"
         />
-      </section>
+      </div>
 
-      {/* Document Library */}
-      <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
-          <h2 className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            Document Library
+      {/* ── Quick AI Tool Shortcuts ───────────────────────────────── */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
+            <Zap size={17} className="text-primary" />
+            <span>Quick Actions</span>
+          </h2>
+          <Button
+            onClick={() => navigate("/tools")}
+            variant="ghost"
+            className="text-xs font-bold text-primary hover:text-primary p-0 h-auto gap-1"
+          >
+            <span>View All Tools</span>
+            <ArrowRight size={13} />
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <QuickActionCard
+            title="Upload Document"
+            desc="Add PDF lecture notes & textbooks"
+            icon={FileText}
+            onClick={() => navigate("/documents")}
+          />
+          <QuickActionCard
+            title="AI Tutor Chat"
+            desc="Ask questions with context"
+            icon={MessageSquare}
+            onClick={() => navigate("/workspace")}
+          />
+          <QuickActionCard
+            title="MCQ Quiz Engine"
+            desc="Generate interactive practice exams"
+            icon={Award}
+            onClick={() => navigate("/tools")}
+          />
+          <QuickActionCard
+            title="Flashcard Generator"
+            desc="Active recall term cards"
+            icon={BrainCircuit}
+            onClick={() => navigate("/tools")}
+          />
+        </div>
+      </div>
+
+      {/* ── Main Content Grid: Recent Documents & Activity Stream ──── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Column (2 cols): Document Library */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
+              <FolderOpen size={17} className="text-primary" />
+              <span>Document Library</span>
+              <span className="text-xs text-muted-foreground font-semibold">({documents.length})</span>
+            </h2>
+
+            {documents.length > 0 && (
+              <div className="relative w-full sm:w-60">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Filter documents..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full h-8 pl-8 pr-3 rounded-lg border border-border/60 bg-card text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+                />
+              </div>
+            )}
+          </div>
+
+          {documents.length === 0 ? (
+            <Card className="border border-border/60 bg-card/40 p-8 text-center space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto text-xl">
+                📄
+              </div>
+              <div>
+                <h3 className="text-sm font-bold">No Documents Yet</h3>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                  Upload your first PDF to enable AI study notes, practice questions, and interactive tutoring.
+                </p>
+              </div>
+              <Button onClick={() => navigate("/documents")} className="h-9 px-4 text-xs font-bold gap-2">
+                <Plus size={15} />
+                <span>Upload PDF Notes</span>
+              </Button>
+            </Card>
+          ) : filteredDocs.length === 0 ? (
+            <Card className="border border-border/60 bg-card/40 p-6 text-center text-xs text-muted-foreground">
+              No documents matching &quot;{searchQuery}&quot;
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {filteredDocs.map((doc) => (
+                <Card
+                  key={doc.id}
+                  onClick={() => handleSelectDoc(doc)}
+                  className="group relative cursor-pointer border border-border/60 bg-card hover:border-primary/60 hover:bg-muted/30 transition-all duration-200 shadow-sm"
+                >
+                  <CardContent className="p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform shrink-0">
+                        <FileText size={18} />
+                      </div>
+                      <div className="min-w-0 space-y-0.5">
+                        <h4 className="font-bold text-xs sm:text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                          {doc.filename}
+                        </h4>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-semibold">
+                          <span>{doc.page_count} Pages</span>
+                          <span>•</span>
+                          <span>{(doc.file_size_bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                          <span>•</span>
+                          <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                            <CheckCircle2 size={10} /> Ready
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectDoc(doc);
+                        }}
+                        className="h-8 px-3 text-[11px] font-bold gap-1.5 opacity-90 group-hover:opacity-100"
+                      >
+                        <span>Open Chat</span>
+                        <ArrowRight size={12} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => handleDeleteDoc(e, doc.id)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        title="Delete Document"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column (1 col): Recent Activity Feed */}
+        <div className="space-y-4">
+          <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
+            <Clock size={17} className="text-primary" />
+            <span>Recent Activity</span>
           </h2>
 
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 w-full rounded-lg border border-input bg-background/50 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#b4befe]/40"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Upload card */}
-          <Card
-            onClick={() => navigate("/upload")}
-            className="hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-200 border border-dashed border-[#b4befe]/30 bg-[#b4befe]/[0.03] hover:bg-[#b4befe]/[0.07] rounded-xl flex flex-col items-center justify-center p-6 text-center h-[200px] group"
-          >
-            <div className="rounded-full bg-[#b4befe]/15 p-3 text-[#b4befe] mb-3 group-hover:scale-105 transition-transform duration-200">
-              <Plus size={22} />
-            </div>
-            <h3 className="text-sm font-bold text-foreground">Upload Document</h3>
-            <p className="text-[10px] text-muted-foreground font-medium mt-1">
-              PDF up to 20 MB
-            </p>
+          <Card className="border border-border/60 bg-card p-4">
+            {stats?.recent_activities && stats.recent_activities.length > 0 ? (
+              <div className="space-y-3">
+                {stats.recent_activities.map((act, i) => (
+                  <div
+                    key={act.id || i}
+                    className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0 mt-0.5">
+                      {act.type === "document" ? <FileText size={14} /> : <MessageSquare size={14} />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-foreground truncate">{act.title}</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">{act.action}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 text-center space-y-2 text-muted-foreground">
+                <div className="text-2xl">⚡</div>
+                <p className="text-xs font-semibold">No recent activity logged yet.</p>
+                <p className="text-[10px]">Your uploads and study chats will appear here.</p>
+              </div>
+            )}
           </Card>
-
-          {/* Doc cards */}
-          {filteredDocuments.map((doc) => (
-            <Card
-              key={doc.id}
-              onClick={() => handleSelectDoc(doc)}
-              className="hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-200 bg-card shadow-sm hover:shadow-md border border-border/60 rounded-xl flex flex-col justify-between p-4 sm:p-5 h-[200px] group relative overflow-hidden"
-            >
-              <div className="space-y-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="rounded-lg bg-[#b4befe]/10 p-2 text-[#b4befe] shrink-0">
-                    <FileText size={15} />
-                  </div>
-                  <h3
-                    className="text-xs font-bold text-foreground truncate"
-                    title={doc.filename}
-                  >
-                    {doc.filename}
-                  </h3>
-                </div>
-
-                {/* Metadata */}
-                <div className="text-[10px] font-medium text-muted-foreground space-y-1.5 mt-1">
-                  <div className="flex justify-between">
-                    <span>Pages</span>
-                    <span className="text-foreground font-semibold">
-                      {doc.page_count}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Resources</span>
-                    <span className="text-[#b4befe] font-bold">
-                      {doc.generatedCount || 0} Available
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Last Opened</span>
-                    <span className="text-foreground/70 font-medium">
-                      {doc.lastOpened
-                        ? new Date(doc.lastOpened).toLocaleDateString()
-                        : "Never"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Footer actions */}
-              <div
-                className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-1.5 sm:gap-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                  <Button
-                    onClick={() => handleSelectDoc(doc)}
-                    variant="outline"
-                    className="h-7 px-2 sm:px-2.5 text-[10px] font-bold border-border/50 text-muted-foreground hover:text-foreground active:scale-[0.98]"
-                  >
-                    Open Resources
-                  </Button>
-                  <Button
-                    onClick={(e) => handleDeleteDoc(e, doc.id)}
-                    variant="outline"
-                    className="h-7 w-7 p-0 flex items-center justify-center border-border/50 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.98] shrink-0"
-                    title="Delete document"
-                  >
-                    <Trash2 size={11} />
-                  </Button>
-                </div>
-
-                <Button
-                  onClick={() => handleSelectDoc(doc)}
-                  className="h-7 px-2.5 sm:px-3 text-[10px] font-bold flex items-center gap-1 active:scale-[0.98] shrink-0"
-                >
-                  <span>Open AI Tutor</span>
-                  <ArrowRight size={10} />
-                </Button>
-              </div>
-            </Card>
-          ))}
         </div>
-      </section>
+      </div>
     </div>
   );
 }
 
-// ── Summary Card ──────────────────────────────────────────────────
+// ── Summary Metric Card ──────────────────────────────────────────────
 function SummaryCard({
   icon: Icon,
   label,
@@ -312,29 +385,54 @@ function SummaryCard({
   isLoading?: boolean;
 }) {
   return (
-    <Card className="hover:scale-[1.01] transition-all duration-200 bg-card shadow-sm hover:shadow-md border border-border/60 rounded-xl">
-      <CardContent className="flex items-center gap-4 pt-5 p-5">
-        <div className="rounded-lg bg-[#b4befe]/10 p-2.5 text-[#b4befe]">
-          <Icon size={17} aria-hidden="true" />
+    <Card className="bg-card border border-border/60 rounded-2xl p-5 shadow-sm hover:border-border transition-all">
+      <div className="flex items-center gap-4">
+        <div className="p-3 rounded-xl bg-primary/10 text-primary shrink-0">
+          <Icon size={20} />
         </div>
-        <div className="space-y-0.5 flex-1 min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-muted-foreground">
             {label}
           </p>
-          {isLoading ? (
-            <div className="h-6 w-14 bg-muted animate-pulse rounded mt-0.5" />
-          ) : (
-            <p className="text-xl font-extrabold tracking-tight truncate">
-              {value}
-            </p>
-          )}
-          {subtext && (
-            <p className="text-[10px] text-muted-foreground/70 font-medium truncate">
-              {subtext}
-            </p>
-          )}
+          <h3 className="text-xl font-extrabold text-foreground tracking-tight">
+            {isLoading ? "..." : value}
+          </h3>
+          {subtext && <p className="text-[10px] text-muted-foreground font-medium">{subtext}</p>}
         </div>
-      </CardContent>
+      </div>
+    </Card>
+  );
+}
+
+// ── Quick Action Shortcut Card ───────────────────────────────────────
+function QuickActionCard({
+  title,
+  desc,
+  icon: Icon,
+  onClick,
+}: {
+  title: string;
+  desc: string;
+  icon: LucideIcon;
+  onClick: () => void;
+}) {
+  return (
+    <Card
+      onClick={onClick}
+      className="group cursor-pointer border border-border/60 bg-card p-4 hover:border-primary/60 hover:bg-primary/[0.04] transition-all duration-200 shadow-sm"
+    >
+      <div className="space-y-3">
+        <div className="p-2.5 rounded-xl bg-primary/10 text-primary w-fit group-hover:scale-110 transition-transform">
+          <Icon size={18} />
+        </div>
+        <div>
+          <h4 className="text-xs font-bold text-foreground group-hover:text-primary transition-colors flex items-center justify-between">
+            <span>{title}</span>
+            <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+          </h4>
+          <p className="text-[11px] text-muted-foreground mt-0.5 font-medium line-clamp-1">{desc}</p>
+        </div>
+      </div>
     </Card>
   );
 }
