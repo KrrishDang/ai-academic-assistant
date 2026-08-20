@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
 from google.genai import types
 from sqlalchemy.orm import Session

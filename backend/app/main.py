@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
-    """Verify database connection during application startup and log events."""
+    """Verify database connection and run Alembic migrations during application startup."""
     logger.info("FastAPI application is starting up...")
     try:
         with engine.connect() as connection:
@@ -27,6 +27,16 @@ async def lifespan(application: FastAPI):
         logger.info("Database connection verified successfully on startup.")
     except Exception as error:
         logger.error("Database connection verification failed on startup: %s", error)
+
+    try:
+        from alembic import command
+        from alembic.config import Config
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Alembic database migrations applied successfully on startup.")
+    except Exception as error:
+        logger.warning("Alembic auto-migration warning: %s", error)
+
     yield
     logger.info("FastAPI application is shutting down...")
 
