@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000,http://localhost:4173"
     log_level: str = "INFO"
     session_secret: str = "generate-a-secure-secret-key-here"
+    jwt_secret_key: SecretStr = Field(
+        default=SecretStr("v2_studyhub_default_secret_key_change_in_production"),
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "SECRET_KEY"),
+    )
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60 * 24
     google_api_key: SecretStr | None = Field(
         default=None,
         validation_alias=AliasChoices("GOOGLE_API_KEY", "GEMINI_API_KEY"),
