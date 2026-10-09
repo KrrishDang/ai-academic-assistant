@@ -1,6 +1,7 @@
 """Security utilities for password hashing and JWT authentication."""
 
 from datetime import datetime, timedelta, timezone
+import hashlib
 import logging
 import uuid
 import bcrypt
@@ -11,19 +12,44 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 
 
+def _pre_hash_password(password: str) -> bytes:
+    """Pre-hash password using SHA-256 to produce a fixed 64-character hex string (64 bytes).
+
+    This guarantees that passwords of any length (including >72 bytes and multi-byte Unicode/emojis)
+    are preserved in their entirety with full entropy before being passed to bcrypt, preventing
+    72-byte truncation collision vulnerabilities.
+    """
+    digest_hex = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return digest_hex.encode("utf-8")
+
+
 def hash_password(password: str) -> str:
-    """Hash a plaintext password securely using bcrypt."""
-    pwd_bytes = password.encode("utf-8")[:72]
+    """Hash a plaintext password securely using SHA-256 pre-hashing and bcrypt."""
+    pre_hashed = _pre_hash_password(password)
     salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
+    return bcrypt.hashpw(pre_hashed, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a stored bcrypt hash."""
+    """Verify a plaintext password against a stored bcrypt hash.
+
+    Supports SHA-256 pre-hashed passwords while gracefully falling back to legacy raw bcrypt
+    hashes for complete backward compatibility.
+    """
     try:
-        pwd_bytes = plain_password.encode("utf-8")[:72]
         hash_bytes = hashed_password.encode("utf-8")
-        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+
+        # 1. Primary check: SHA-256 pre-hashed password
+        pre_hashed = _pre_hash_password(plain_password)
+        if bcrypt.checkpw(pre_hashed, hash_bytes):
+            return True
+
+        # 2. Legacy fallback check: raw 72-byte sliced password (for backward compatibility)
+        legacy_bytes = plain_password.encode("utf-8")[:72]
+        if bcrypt.checkpw(legacy_bytes, hash_bytes):
+            return True
+
+        return False
     except Exception as err:
         logger.warning("Password verification failed with exception: %s", err)
         return False
