@@ -10,6 +10,14 @@ from app.schemas.conversation import (
 )
 from app.schemas.dashboard import DashboardStatsResponse, ActivityResponse
 from app.schemas.search import SearchResultsResponse, MessageSearchResponse
+from app.schemas.notebook import (
+    SourceResponse,
+    NotebookCreateRequest,
+    NotebookUpdateRequest,
+    NotebookResponse,
+    NotebookSummaryResponse,
+    NotebookDetailResponse,
+)
 
 __all__ = [
     "DocumentUploadResponse",
@@ -24,4 +32,10 @@ __all__ = [
     "ActivityResponse",
     "SearchResultsResponse",
     "MessageSearchResponse",
+    "SourceResponse",
+    "NotebookCreateRequest",
+    "NotebookUpdateRequest",
+    "NotebookResponse",
+    "NotebookSummaryResponse",
+    "NotebookDetailResponse",
 ]

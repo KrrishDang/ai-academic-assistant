@@ -14,6 +14,8 @@ class Conversation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"), nullable=True, index=True)
+    notebook_id = Column(UUID(as_uuid=True), ForeignKey("notebooks.id", ondelete="CASCADE"), nullable=True, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     title = Column(String(255), nullable=False)
     session_id = Column(String(64), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
@@ -25,6 +27,8 @@ class Conversation(Base):
     )
 
     document = relationship("Document", back_populates="conversations")
+    notebook = relationship("Notebook", back_populates="conversations")
+    user = relationship("User", backref="conversations")
     messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
 
 

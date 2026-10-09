@@ -161,6 +161,7 @@ class TestAuthAPIEndpoints(unittest.TestCase):
         cls.client = TestClient(app)
 
     def setUp(self):
+        app.dependency_overrides[get_db_session] = override_get_db
         db = TestingSessionLocal()
         db.query(User).delete()
         db.commit()

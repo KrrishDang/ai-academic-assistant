@@ -24,7 +24,9 @@ class ConversationResponse(BaseModel):
     """Details of a chat conversation."""
 
     id: uuid.UUID
-    document_id: Optional[uuid.UUID]
+    document_id: Optional[uuid.UUID] = None
+    notebook_id: Optional[uuid.UUID] = None
+    user_id: Optional[uuid.UUID] = None
     title: str
     created_at: datetime
     updated_at: datetime
