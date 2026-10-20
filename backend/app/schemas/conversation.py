@@ -11,6 +11,7 @@ class ConversationCreateRequest(BaseModel):
     """Payload to create a new chat conversation."""
 
     document_id: Optional[uuid.UUID] = None
+    notebook_id: Optional[uuid.UUID] = None
     title: str = Field(default="New Chat", min_length=1, max_length=255)
 
 

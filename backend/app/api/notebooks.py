@@ -66,7 +66,10 @@ def list_notebooks(
         )
         conversation_count = (
             db.scalar(
-                select(func.count(Conversation.id)).where(Conversation.notebook_id == notebook.id)
+                select(func.count(Conversation.id)).where(
+                    Conversation.notebook_id == notebook.id,
+                    Conversation.user_id == current_user.id,
+                )
             )
             or 0
         )
@@ -113,7 +116,10 @@ def get_notebook_detail(
 
     conversations = db.scalars(
         select(Conversation)
-        .where(Conversation.notebook_id == notebook_id)
+        .where(
+            Conversation.notebook_id == notebook_id,
+            Conversation.user_id == current_user.id,
+        )
         .order_by(Conversation.updated_at.desc())
     ).all()
 
@@ -205,7 +211,10 @@ def get_notebook_conversations(
 
     conversations = db.scalars(
         select(Conversation)
-        .where(Conversation.notebook_id == notebook_id)
+        .where(
+            Conversation.notebook_id == notebook_id,
+            Conversation.user_id == current_user.id,
+        )
         .order_by(Conversation.updated_at.desc())
     ).all()
 

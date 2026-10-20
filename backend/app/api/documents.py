@@ -2,14 +2,16 @@
 
 import logging
 import uuid
-from typing import List
+from typing import Annotated, List
 
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_optional_current_user
 from app.core.config import get_settings
 from app.db.session import get_db_session
 from app.models.document import Document
+from app.models.user import User
 from app.schemas.document import (
     DocumentRenameRequest,
     DocumentResponse,
@@ -22,11 +24,13 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents")
 
+
 @router.post("", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_document(
     file: UploadFile = File(...),
     x_session_id: str | None = Header(None, alias="X-Session-ID"),
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> DocumentUploadResponse:
     """Stage, parse, and store one PDF document."""
@@ -48,9 +52,11 @@ async def upload_document(
             detail="The document could not be uploaded. Please try again.",
         )
 
+
 @router.get("", response_model=List[DocumentResponse])
 def list_documents(
     x_session_id: str | None = Header(None, alias="X-Session-ID"),
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> List[Document]:
     """List all persistent documents in the library."""
@@ -59,10 +65,12 @@ def list_documents(
         query = query.filter((Document.session_id == x_session_id) | (Document.session_id.is_(None)))
     return query.order_by(Document.created_at.desc()).all()
 
+
 @router.patch("/{id}", response_model=DocumentResponse)
 def rename_document(
     id: uuid.UUID,
     request: DocumentRenameRequest,
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> Document:
     """Rename an existing document's filename."""
@@ -73,26 +81,30 @@ def rename_document(
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
+
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
     id: uuid.UUID,
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> None:
     """Delete a document metadata and its physical file."""
     document = db.query(Document).filter(Document.id == id).first()
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
-        
+
     try:
         service = DocumentService(get_settings())
         service.delete(db, id)
     except ValueError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
+
 @router.put("/{id}", response_model=DocumentResponse)
 async def replace_document(
     id: uuid.UUID,
     file: UploadFile = File(...),
+    optional_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> Document:
     """Replace the PDF file and re-extract text for an existing document."""

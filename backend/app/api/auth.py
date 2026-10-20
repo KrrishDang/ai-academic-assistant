@@ -2,10 +2,10 @@
 
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 import jwt
@@ -18,22 +18,31 @@ from app.schemas.auth import TokenResponse, UserLoginRequest, UserRegisterReques
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-security_scheme = HTTPBearer(auto_error=False)
 
 
-def get_current_user(
-    auth_credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security_scheme)],
+def get_optional_current_user(
+    request: Request,
     db: Annotated[Session, Depends(get_db_session)],
-) -> User:
-    """Dependency to retrieve and authenticate current user from Bearer JWT token."""
-    if not auth_credentials or not auth_credentials.credentials:
+) -> User | None:
+    """Dependency that returns authenticated User if Bearer token is provided.
+
+    - When the Authorization header is absent, returns None (allowing anonymous V1 access).
+    - When the Authorization header is present, strictly validates the token.
+      Any invalid, malformed, expired, or deactivated user credentials raise HTTP 401.
+    """
+    auth_header = request.headers.get("authorization")
+    if not auth_header:
+        return None
+
+    parts = auth_header.strip().split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid authentication token",
+            detail="Invalid authorization header format. Expected 'Bearer <token>'",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    token = auth_credentials.credentials
+    token = parts[1]
     try:
         payload = decode_access_token(token)
         user_id_str: str | None = payload.get("sub")
@@ -71,7 +80,27 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    if not user.is_active or user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive or suspended",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
+
+
+def get_current_user(
+    current_user: Annotated[User | None, Depends(get_optional_current_user)],
+) -> User:
+    """Dependency for endpoints requiring mandatory authentication."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authentication token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return current_user
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -88,11 +117,16 @@ def register_user(
         )
 
     hashed_pw = hash_password(payload.password)
+    user_name = payload.display_name or payload.email.split("@")[0]
     user = User(
         email=payload.email,
         password_hash=hashed_pw,
+        name=user_name,
         display_name=payload.display_name,
-        name=payload.display_name,
+        role="user",
+        is_active=True,
+        is_verified=False,
+        is_banned=False,
     )
     db.add(user)
     db.commit()
@@ -122,6 +156,16 @@ def login_user(
             detail="Invalid email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    if not user.is_active or user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Account is inactive or suspended",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
 
     token = create_access_token(subject=user.id)
     logger.info("User logged in successfully: ID %s", user.id)
