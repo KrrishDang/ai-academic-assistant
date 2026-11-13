@@ -28,6 +28,7 @@ class Source(Base):
     processing_status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False, index=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     storage_key: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False
     )

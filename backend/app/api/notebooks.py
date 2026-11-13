@@ -1,14 +1,16 @@
 """API router for V2 notebook management."""
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.auth import get_current_user
+from app.core.config import get_settings
 from app.db.session import get_db_session
 from app.models.conversation import Conversation
 from app.models.notebook import Notebook
@@ -23,6 +25,9 @@ from app.schemas.notebook import (
     NotebookUpdateRequest,
     SourceResponse,
 )
+from app.services.source_service import SourceService, SourceValidationError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notebooks", tags=["notebooks"])
 
@@ -219,3 +224,68 @@ def get_notebook_conversations(
     ).all()
 
     return [ConversationResponse.model_validate(c) for c in conversations]
+
+
+@router.post("/{notebook_id}/sources", response_model=SourceResponse, status_code=status.HTTP_201_CREATED)
+async def upload_notebook_source(
+    notebook_id: uuid.UUID,
+    file: UploadFile = File(...),
+    current_user: Annotated[User, Depends(get_current_user)] = None,
+    db: Annotated[Session, Depends(get_db_session)] = None,
+) -> SourceResponse:
+    """Upload and ingest a document source into an owned notebook."""
+    notebook = db.scalar(
+        select(Notebook).where(
+            Notebook.id == notebook_id,
+            Notebook.user_id == current_user.id,
+        )
+    )
+    if not notebook:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notebook not found",
+        )
+
+    service = SourceService(get_settings())
+    try:
+        source = await service.ingest_source(notebook, file, db)
+        return SourceResponse.model_validate(source)
+    except SourceValidationError as err:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(err),
+        ) from err
+    except Exception as err:
+        logger.exception("Failed to ingest source for notebook %s", notebook_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while processing the source document.",
+        ) from err
+
+
+@router.get("/{notebook_id}/sources", response_model=list[SourceResponse])
+def list_notebook_sources(
+    notebook_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db_session)],
+) -> list[SourceResponse]:
+    """List all sources attached to an owned notebook."""
+    notebook = db.scalar(
+        select(Notebook).where(
+            Notebook.id == notebook_id,
+            Notebook.user_id == current_user.id,
+        )
+    )
+    if not notebook:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notebook not found",
+        )
+
+    sources = db.scalars(
+        select(Source)
+        .where(Source.notebook_id == notebook_id)
+        .order_by(Source.created_at.asc())
+    ).all()
+
+    return [SourceResponse.model_validate(s) for s in sources]
