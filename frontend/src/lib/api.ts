@@ -1025,3 +1025,201 @@ export async function listNotebookConversations(
   }
   return response.json();
 }
+
+/* ─── V2 Study Studio Models and API Functions ─────────────────────────────── */
+
+export type StudyMaterialType = "study_guide" | "flashcards" | "exam_paper";
+
+export type StudyGuideGenerateRequest = {
+  title?: string;
+  focus_topics?: string[];
+};
+
+export type FlashcardsGenerateRequest = {
+  title?: string;
+  num_cards?: number;
+  difficulty?: "Easy" | "Medium" | "Hard" | "Mixed";
+};
+
+export type ExamPaperGenerateRequest = {
+  title?: string;
+  total_marks?: number;
+  question_types?: string[];
+  difficulty?: "Easy" | "Medium" | "Hard" | "Mixed";
+  include_answer_key?: boolean;
+};
+
+export type FlashcardItem = {
+  front: string;
+  back: string;
+  difficulty: string;
+  topic?: string | null;
+  source_reference?: string | null;
+};
+
+export type FlashcardsContent = {
+  flashcards: FlashcardItem[];
+};
+
+export type ExamQuestionItem = {
+  question_number: number;
+  question_text: string;
+  marks: number;
+  question_type: string;
+  difficulty: string;
+  model_answer?: string | null;
+  key_points?: string[];
+  source_reference?: string | null;
+};
+
+export type ExamPaperContent = {
+  title: string;
+  total_marks: number;
+  instructions: string[];
+  questions: ExamQuestionItem[];
+};
+
+export type StudyMaterialResponse = {
+  id: string;
+  notebook_id: string;
+  material_type: StudyMaterialType;
+  title: string;
+  content?: string | null;
+  structured_content?: FlashcardsContent | ExamPaperContent | Record<string, any> | null;
+  generation_status: string;
+  configuration?: {
+    truncated?: boolean;
+    total_chunks?: number;
+    budgeted_chunks?: number;
+    focus_topics?: string[];
+    num_cards?: number;
+    difficulty?: string;
+    total_marks?: number;
+    question_types?: string[];
+    include_answer_key?: boolean;
+    [key: string]: any;
+  } | null;
+  source_references?: Array<{
+    source_id: string;
+    title: string;
+  }> | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Generate comprehensive study guide notes from all processed notebook sources. */
+export async function generateStudyGuide(
+  notebookId: string,
+  payload?: StudyGuideGenerateRequest,
+): Promise<StudyMaterialResponse> {
+  const response = await fetch(
+    `${apiBaseUrl}/notebooks/${notebookId}/generate/study-guide`,
+    {
+      method: "POST",
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload || {}),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail ?? "Failed to generate study guide.");
+  }
+  return response.json();
+}
+
+/** Generate active-recall flashcards from all processed notebook sources. */
+export async function generateNotebookFlashcards(
+  notebookId: string,
+  payload?: FlashcardsGenerateRequest,
+): Promise<StudyMaterialResponse> {
+  const response = await fetch(
+    `${apiBaseUrl}/notebooks/${notebookId}/generate/flashcards`,
+    {
+      method: "POST",
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload || {}),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail ?? "Failed to generate flashcards.");
+  }
+  return response.json();
+}
+
+/** Generate an examination paper from all processed notebook sources. */
+export async function generateExamPaper(
+  notebookId: string,
+  payload: ExamPaperGenerateRequest,
+): Promise<StudyMaterialResponse> {
+  const response = await fetch(
+    `${apiBaseUrl}/notebooks/${notebookId}/generate/exam-paper`,
+    {
+      method: "POST",
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.detail ?? "Failed to generate exam paper.");
+  }
+  return response.json();
+}
+
+/** List all generated study materials belonging to an owned notebook. */
+export async function listNotebookStudyMaterials(
+  notebookId: string,
+): Promise<StudyMaterialResponse[]> {
+  const response = await fetch(
+    `${apiBaseUrl}/notebooks/${notebookId}/study-materials`,
+    {
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail ?? "Failed to load study materials.",
+    );
+  }
+  return response.json();
+}
+
+/** Retrieve an individual study material by ID. */
+export async function getStudyMaterial(
+  materialId: string,
+): Promise<StudyMaterialResponse> {
+  const response = await fetch(
+    `${apiBaseUrl}/study-materials/${materialId}`,
+    {
+      headers: defaultHeaders({ "Content-Type": "application/json" }),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail ?? "Failed to load study material.",
+    );
+  }
+  return response.json();
+}
+
+/** Delete an individual study material by ID. */
+export async function deleteStudyMaterial(
+  materialId: string,
+): Promise<void> {
+  const response = await fetch(
+    `${apiBaseUrl}/study-materials/${materialId}`,
+    {
+      method: "DELETE",
+      headers: defaultHeaders(),
+    },
+  );
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(
+      errorData?.detail ?? "Failed to delete study material.",
+    );
+  }
+}

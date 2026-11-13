@@ -47,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
+import { StudyStudioPanel } from "./StudyStudioPanel";
 
 export function NotebookWorkspacePage() {
   const { id: notebookId } = useParams<{ id: string }>();
@@ -368,6 +369,15 @@ export function NotebookWorkspacePage() {
     setActiveTab("sources"); // Switch tab on mobile so source is visible
 
     // Clear highlight after 4 seconds
+    setTimeout(() => {
+      setHighlightedSourceId(null);
+    }, 4000);
+  };
+
+  // Highlight source clicked from Study Studio
+  const handleStudioSourceClick = (sourceId: string) => {
+    setHighlightedSourceId(sourceId);
+    setActiveTab("sources");
     setTimeout(() => {
       setHighlightedSourceId(null);
     }, 4000);
@@ -937,93 +947,20 @@ export function NotebookWorkspacePage() {
           </div>
         </main>
 
-        {/* ─── RIGHT PANEL: Studio & Course Synthesis (320px) ──────────────── */}
+        {/* ─── RIGHT PANEL: Functional Study Studio (Phase 4B) ─────────────── */}
         <aside
-          className={`w-full lg:w-80 shrink-0 border-l border-border/80 flex flex-col bg-card/20 overflow-y-auto ${
+          className={`w-full lg:w-80 xl:w-96 shrink-0 border-l border-border/80 flex flex-col overflow-hidden ${
             activeTab !== "studio" ? "hidden lg:flex" : "flex"
           }`}
         >
-          <div className="p-4 border-b border-border/60 shrink-0">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-[#C6F432]" />
-              <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                Study Studio
-              </h2>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              Course-wide synthesis and revision workspace.
-            </p>
-          </div>
-
-          <div className="p-4 space-y-4 flex-1">
-            {/* Knowledge Base Overview */}
-            <div className="p-3.5 rounded-xl border border-border/60 bg-card/60 space-y-2">
-              <h3 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-[#C6F432]" />
-                Knowledge Base Stats
-              </h3>
-              <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-                <div className="p-2 rounded-lg bg-muted/40">
-                  <span className="text-muted-foreground block text-[9px] uppercase font-bold">Total Sources</span>
-                  <span className="text-foreground font-black text-sm">{sources.length}</span>
-                </div>
-                <div className="p-2 rounded-lg bg-muted/40">
-                  <span className="text-muted-foreground block text-[9px] uppercase font-bold">Processed</span>
-                  <span className="text-emerald-500 font-black text-sm">
-                    {sources.filter((s) => s.processing_status === "completed").length}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Future Generation Tools Placeholder Cards */}
-            <div className="space-y-2.5">
-              <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                Upcoming Studio Modules
-              </h3>
-
-              <div className="p-3 rounded-xl border border-border/40 bg-card/40 space-y-1.5 opacity-85">
-                <div className="flex items-center gap-2 text-foreground font-bold text-xs">
-                  <BookMarked className="w-3.5 h-3.5 text-[#C6F432]" />
-                  <span>Comprehensive Course Guide</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Synthesizes all uploaded lecture slides and textbook chapters into unified study notes.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border border-border/40 bg-card/40 space-y-1.5 opacity-85">
-                <div className="flex items-center gap-2 text-foreground font-bold text-xs">
-                  <FileQuestion className="w-3.5 h-3.5 text-[#C6F432]" />
-                  <span>5-Mark & 10-Mark Exam Simulator</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Generates full university-grade exam papers with model marking schemes based on your syllabus.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-xl border border-border/40 bg-card/40 space-y-1.5 opacity-85">
-                <div className="flex items-center gap-2 text-foreground font-bold text-xs">
-                  <HelpCircle className="w-3.5 h-3.5 text-[#C6F432]" />
-                  <span>Viva & Oral Examination Prep</span>
-                </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Interactive rapid-fire Q&A drilling the most frequently tested definitions and proofs.
-                </p>
-              </div>
-            </div>
-
-            {/* Roadmap / Explanatory Note */}
-            <div className="p-3.5 rounded-xl border border-[#C6F432]/20 bg-[#C6F432]/5 text-[11px] text-muted-foreground leading-relaxed space-y-1.5">
-              <div className="flex items-center gap-1.5 text-foreground font-bold text-xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#C6F432]" />
-                <span>Grounded Chat Available Now</span>
-              </div>
-              <p>
-                Studio one-click generation across all notebook documents is scheduled for Phase 4. You can use the center panel chat right now to ask for summaries, exam answers, and flashcards grounded across your sources!
-              </p>
-            </div>
-          </div>
+          {notebook && (
+            <StudyStudioPanel
+              notebookId={notebook.id}
+              notebookTitle={notebook.title}
+              sources={sources}
+              onSourceClick={handleStudioSourceClick}
+            />
+          )}
         </aside>
       </div>
 
