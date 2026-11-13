@@ -13,7 +13,8 @@ import { WorkspacePage } from "@/pages/WorkspacePage";
 import { AIToolsPage } from "@/pages/AIToolsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
-import { NotebooksPlaceholderPage } from "@/pages/NotebooksPlaceholderPage";
+import { NotebookDashboardPage } from "@/pages/notebooks/NotebookDashboardPage";
+import { NotebookWorkspacePage } from "@/pages/notebooks/NotebookWorkspacePage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 
@@ -38,7 +39,15 @@ export function App() {
                   path="/notebooks"
                   element={
                     <ProtectedRoute>
-                      <NotebooksPlaceholderPage />
+                      <NotebookDashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notebooks/:id"
+                  element={
+                    <ProtectedRoute>
+                      <NotebookWorkspacePage />
                     </ProtectedRoute>
                   }
                 />
