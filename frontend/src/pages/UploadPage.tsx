@@ -2,17 +2,29 @@ import { useState } from "react";
 import { DocumentUpload } from "@/features/documents/DocumentUpload";
 import { useDocuments, type EnrichedDocument } from "@/features/documents/DocumentContext";
 import { useConversations } from "@/features/conversations/ConversationContext";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, Trash2, ArrowRight, Search } from "lucide-react";
+import { 
+  FileText, 
+  Trash2, 
+  ArrowRight, 
+  Search, 
+  Upload, 
+  CheckCircle2, 
+  Edit2, 
+  FolderOpen
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 /** Page for validating, uploading, and managing academic PDF notes. */
 export function UploadPage() {
-  const { documents, selectDocument, deleteDoc } = useDocuments();
+  const { documents, selectDocument, deleteDoc, renameDoc } = useDocuments();
   const { conversations, selectConversation, createNewConversation } = useConversations();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   const handleSelectDoc = async (doc: EnrichedDocument) => {
     await selectDocument(doc);
@@ -28,126 +40,176 @@ export function UploadPage() {
   const handleDeleteDoc = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (window.confirm("Are you sure you want to delete this document?")) {
-      try {
-        await deleteDoc(id);
-      } catch (err) {
-        console.error("Failed to delete document:", err);
-      }
+      await deleteDoc(id);
     }
   };
 
-  const filteredDocuments = documents.filter((doc) =>
-    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleRenameSubmit = async (id: string) => {
+    if (editName.trim()) {
+      await renameDoc(id, editName.trim());
+      setEditingId(null);
+    }
+  };
+
+  const filteredDocs = documents.filter((d) =>
+    d.filename.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
-      <header className="space-y-1">
-        <p className="text-xs font-bold uppercase tracking-wider text-primary">Documents</p>
-        <h1 className="text-3xl font-extrabold tracking-tight">Manage your study library</h1>
-        <p className="text-muted-foreground text-sm font-medium leading-relaxed">
-          Upload text-based academic PDFs (up to 20 MB) and manage your existing Study Hub materials.
-        </p>
-      </header>
-
-      {/* Upload Box */}
-      <section className="bg-card/20 border border-border/60 rounded-2xl p-6 shadow-sm">
-        <h2 className="text-xs font-bold text-foreground uppercase tracking-wider mb-4">Upload New Document</h2>
-        <DocumentUpload />
-      </section>
-
-      {/* Document Library Section */}
-      <section className="space-y-4 pt-2">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
-          <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">Document Library</h2>
-          
-          {/* Search bar */}
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 w-full rounded-md border border-input bg-background/50 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1"
-            />
+    <div className="space-y-8 pb-12 animate-fade-in">
+      {/* Top Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-primary/10 text-primary">
+              <Upload size={22} />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Documents & Upload</h1>
           </div>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 font-medium">
+            Upload PDF textbooks, lecture slides, and notes (up to 20MB / 500 pages) for AI processing.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Upload Dropzone Component */}
+      <Card className="border border-border/80 bg-card/60 backdrop-blur-md p-6 shadow-lg">
+        <DocumentUpload />
+      </Card>
+
+      {/* Uploaded Documents Library Section */}
+      <div className="space-y-4 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+          <h2 className="text-base font-extrabold text-foreground flex items-center gap-2">
+            <FolderOpen size={18} className="text-primary" />
+            <span>Uploaded Library</span>
+            <span className="text-xs text-muted-foreground font-semibold">({documents.length} files)</span>
+          </h2>
+
+          {documents.length > 0 && (
+            <div className="relative w-full sm:w-64">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search uploaded PDFs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-8 pl-8 pr-3 rounded-lg border border-border/60 bg-card text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
+              />
+            </div>
+          )}
         </div>
 
-        {filteredDocuments.length === 0 ? (
-          <div className="text-center py-8 text-xs text-muted-foreground font-semibold">
-            {searchQuery ? `No documents match "${searchQuery}"` : "Your document library is empty."}
-          </div>
+        {documents.length === 0 ? (
+          <Card className="border border-border/60 bg-card/40 p-10 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto text-xl">
+              📄
+            </div>
+            <h3 className="text-sm font-bold">Your document library is empty</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              Drag and drop your study PDF files above to start generating notes and chatting with AI.
+            </p>
+          </Card>
+        ) : filteredDocs.length === 0 ? (
+          <Card className="border border-border/60 bg-card/40 p-6 text-center text-xs text-muted-foreground">
+            No files found matching &quot;{searchQuery}&quot;
+          </Card>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-            {filteredDocuments.map((doc) => (
-              <Card 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredDocs.map((doc) => (
+              <Card
                 key={doc.id}
                 onClick={() => handleSelectDoc(doc)}
-                className="hover:scale-[1.01] active:scale-[0.99] cursor-pointer transition-all duration-300 bg-card/40 backdrop-blur-md shadow-sm hover:shadow-md border border-border/80 rounded-xl flex flex-col justify-between p-5 h-[210px] group relative overflow-hidden"
+                className="group cursor-pointer border border-border/60 bg-card hover:border-primary/60 hover:bg-muted/20 transition-all duration-200 shadow-sm"
               >
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="rounded-lg bg-primary/10 p-2 text-primary shrink-0">
-                        <FileText size={16} />
+                <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3.5 min-w-0">
+                      <div className="p-2.5 rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform shrink-0 mt-0.5">
+                        <FileText size={20} />
                       </div>
-                      <h3 className="text-xs font-bold text-foreground truncate" title={doc.filename}>
-                        {doc.filename}
-                      </h3>
+                      <div className="min-w-0 space-y-1">
+                        {editingId === doc.id ? (
+                          <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              className="h-7 px-2 text-xs font-bold border border-primary rounded bg-background text-foreground"
+                              autoFocus
+                            />
+                            <Button
+                              size="sm"
+                              onClick={() => handleRenameSubmit(doc.id)}
+                              className="h-7 px-2 text-[10px] font-bold"
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        ) : (
+                          <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors truncate">
+                            {doc.filename}
+                          </h3>
+                        )}
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-semibold">
+                          <span>{doc.page_count} Pages</span>
+                          <span>•</span>
+                          <span>{(doc.file_size_bytes / (1024 * 1024)).toFixed(1)} MB</span>
+                          <span>•</span>
+                          <span className="text-emerald-400 flex items-center gap-1 font-bold">
+                            <CheckCircle2 size={10} /> Processed
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Metadata */}
-                  <div className="text-[10px] font-semibold text-muted-foreground space-y-1.5 mt-3 flex-1">
-                    <div className="flex justify-between">
-                      <span>Pages:</span>
-                      <span className="text-foreground">{doc.page_count}</span>
+                  <div className="flex items-center justify-between pt-3 border-t border-border/40 text-xs">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingId(doc.id);
+                          setEditName(doc.filename.replace(/\.pdf$/i, ""));
+                        }}
+                        className="h-7 px-2 text-[10px] font-semibold text-muted-foreground hover:text-foreground"
+                        title="Rename file"
+                      >
+                        <Edit2 size={12} className="mr-1" />
+                        <span>Rename</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => handleDeleteDoc(e, doc.id)}
+                        className="h-7 px-2 text-[10px] font-semibold text-muted-foreground hover:text-destructive"
+                        title="Delete file"
+                      >
+                        <Trash2 size={12} className="mr-1" />
+                        <span>Delete</span>
+                      </Button>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Study Materials:</span>
-                      <span className="text-primary font-bold">{doc.generatedCount || 0} saved</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Last Opened:</span>
-                      <span className="text-foreground">{doc.lastOpened ? new Date(doc.lastOpened).toLocaleDateString() : "Never"}</span>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Consistent Footer Actions */}
-                <div className="mt-auto pt-3 border-t border-border/20 flex items-center justify-between gap-2" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center gap-1.5">
                     <Button
-                      onClick={() => handleSelectDoc(doc)}
-                      variant="outline"
-                      className="h-7 px-2.5 text-[10px] font-bold border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted active:scale-[0.98] transition-all"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectDoc(doc);
+                      }}
+                      className="h-7 px-3 text-[11px] font-bold gap-1"
                     >
-                      View Materials
-                    </Button>
-                    <Button
-                      onClick={(e) => handleDeleteDoc(e, doc.id)}
-                      variant="outline"
-                      className="h-7 w-7 p-0 flex items-center justify-center border-border/60 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-[0.98] transition-all"
-                      title="Delete document"
-                    >
-                      <Trash2 size={12} />
+                      <span>Open Workspace</span>
+                      <ArrowRight size={12} />
                     </Button>
                   </div>
-                  
-                  <Button
-                    onClick={() => handleSelectDoc(doc)}
-                    className="h-7 px-3 text-[10px] font-bold flex items-center gap-1 active:scale-[0.98] transition-all hover:opacity-90"
-                  >
-                    <span>Open AI Tutor</span>
-                    <ArrowRight size={10} />
-                  </Button>
-                </div>
+                </CardContent>
               </Card>
             ))}
           </div>
         )}
-      </section>
+      </div>
     </div>
   );
 }

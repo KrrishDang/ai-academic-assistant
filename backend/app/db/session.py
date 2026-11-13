@@ -18,9 +18,13 @@ class Base(DeclarativeBase):
 
 
 def get_db_session() -> Generator[Session, None, None]:
-    """Yield a request-scoped database session for future route dependencies."""
+    """Yield a request-scoped database session for route dependencies."""
     database_session = SessionLocal()
     try:
         yield database_session
     finally:
         database_session.close()
+
+
+# Alias for get_db_session for standard dependency naming
+get_db = get_db_session

@@ -10,6 +10,25 @@ from app.schemas.conversation import (
 )
 from app.schemas.dashboard import DashboardStatsResponse, ActivityResponse
 from app.schemas.search import SearchResultsResponse, MessageSearchResponse
+from app.schemas.notebook import (
+    SourceResponse,
+    NotebookCreateRequest,
+    NotebookUpdateRequest,
+    NotebookResponse,
+    NotebookSummaryResponse,
+    NotebookDetailResponse,
+)
+from app.schemas.study_material import (
+    StudyGuideGenerateRequest,
+    FlashcardsGenerateRequest,
+    ExamPaperGenerateRequest,
+    FlashcardItem,
+    FlashcardsContent,
+    ExamQuestionItem,
+    ExamPaperContent,
+    StudyMaterialResponse,
+    StudyMaterialSummaryResponse,
+)
 
 __all__ = [
     "DocumentUploadResponse",
@@ -24,4 +43,19 @@ __all__ = [
     "ActivityResponse",
     "SearchResultsResponse",
     "MessageSearchResponse",
+    "SourceResponse",
+    "NotebookCreateRequest",
+    "NotebookUpdateRequest",
+    "NotebookResponse",
+    "NotebookSummaryResponse",
+    "NotebookDetailResponse",
+    "StudyGuideGenerateRequest",
+    "FlashcardsGenerateRequest",
+    "ExamPaperGenerateRequest",
+    "FlashcardItem",
+    "FlashcardsContent",
+    "ExamQuestionItem",
+    "ExamPaperContent",
+    "StudyMaterialResponse",
+    "StudyMaterialSummaryResponse",
 ]

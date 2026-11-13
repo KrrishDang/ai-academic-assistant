@@ -261,3 +261,134 @@ def parse_and_validate_flashcards(raw_text: str) -> FlashcardsResponseSchema:
         raise ValueError("No valid flashcards parsed.")
 
     return FlashcardsResponseSchema(flashcards=validated_cards)
+
+
+from app.schemas.study_material import (
+    ExamPaperContent,
+    ExamQuestionItem,
+    FlashcardItem,
+    FlashcardsContent,
+)
+
+
+def parse_and_validate_notebook_flashcards(raw_text: str) -> FlashcardsContent:
+    """Parse raw text from Gemini into a validated FlashcardsContent schema object."""
+    cleaned = repair_json_string(raw_text)
+    try:
+        data = json.loads(cleaned)
+    except Exception as err:
+        logger.warning("Initial JSON parse failed for notebook flashcards: %s", err)
+        raise ValueError(f"Failed to parse Flashcards JSON: {err}") from err
+
+    cards_raw = []
+    if isinstance(data, dict):
+        cards_raw = data.get("flashcards") or data.get("cards") or []
+    elif isinstance(data, list):
+        cards_raw = data
+
+    if not isinstance(cards_raw, list) or len(cards_raw) == 0:
+        raise ValueError("Flashcard response must contain a non-empty list of flashcards.")
+
+    validated_cards: List[FlashcardItem] = []
+    for idx, c in enumerate(cards_raw):
+        if not isinstance(c, dict):
+            continue
+        front_text = str(c.get("front") or c.get("question") or c.get("term") or f"Concept {idx + 1}")
+        back_text = str(c.get("back") or c.get("answer") or c.get("definition") or "Explanation details.")
+        difficulty = str(c.get("difficulty") or "Medium")
+        topic = str(c.get("topic")) if c.get("topic") else None
+        source_ref = str(c.get("source_reference") or c.get("source") or "") or None
+
+        validated_cards.append(
+            FlashcardItem(
+                front=front_text,
+                back=back_text,
+                difficulty=difficulty,
+                topic=topic,
+                source_reference=source_ref,
+            )
+        )
+
+    if not validated_cards:
+        raise ValueError("No valid flashcards found in model output.")
+
+    return FlashcardsContent(flashcards=validated_cards)
+
+
+def parse_and_validate_notebook_exam_paper(
+    raw_text: str,
+    expected_total_marks: int = 50,
+) -> ExamPaperContent:
+    """Parse raw text from Gemini into a validated ExamPaperContent schema object."""
+    cleaned = repair_json_string(raw_text)
+    try:
+        data = json.loads(cleaned)
+    except Exception as err:
+        logger.warning("Initial JSON parse failed for notebook exam paper: %s", err)
+        raise ValueError(f"Failed to parse Exam Paper JSON: {err}") from err
+
+    if not isinstance(data, dict):
+        raise ValueError("Exam paper payload must be a JSON object.")
+
+    title = str(data.get("title") or "University Examination Paper")
+    instructions_raw = data.get("instructions", [])
+    if isinstance(instructions_raw, str):
+        instructions = [instructions_raw]
+    elif isinstance(instructions_raw, list):
+        instructions = [str(i) for i in instructions_raw if i]
+    else:
+        instructions = ["Answer all questions.", "Marks for each question are indicated."]
+
+    questions_raw = data.get("questions") or data.get("exam_questions") or []
+    if not isinstance(questions_raw, list) or len(questions_raw) == 0:
+        raise ValueError("Exam paper must contain a non-empty list of questions.")
+
+    validated_questions: List[ExamQuestionItem] = []
+    for idx, q in enumerate(questions_raw):
+        if not isinstance(q, dict):
+            continue
+        q_num = int(q.get("question_number") or (idx + 1))
+        q_text = str(q.get("question_text") or q.get("question") or f"Question {q_num}")
+        marks = int(q.get("marks") or 5)
+        if marks <= 0:
+            marks = 5
+        q_type = str(q.get("question_type") or ("ten_mark" if marks >= 10 else "five_mark"))
+        difficulty = str(q.get("difficulty") or "Medium")
+        model_answer = str(q.get("model_answer") or q.get("answer") or "") or None
+
+        k_points_raw = q.get("key_points") or q.get("scoring_points") or []
+        if isinstance(k_points_raw, list):
+            k_points = [str(p) for p in k_points_raw if p]
+        elif isinstance(k_points_raw, str):
+            k_points = [k_points_raw]
+        else:
+            k_points = []
+
+        source_ref = str(q.get("source_reference") or q.get("source") or "") or None
+
+        validated_questions.append(
+            ExamQuestionItem(
+                question_number=q_num,
+                question_text=q_text,
+                marks=marks,
+                question_type=q_type,
+                difficulty=difficulty,
+                model_answer=model_answer,
+                key_points=k_points,
+                source_reference=source_ref,
+            )
+        )
+
+    if not validated_questions:
+        raise ValueError("No valid questions parsed for exam paper.")
+
+    actual_total_marks = sum(q.marks for q in validated_questions)
+    total_marks = int(data.get("total_marks") or actual_total_marks or expected_total_marks)
+
+    return ExamPaperContent(
+        title=title,
+        total_marks=total_marks,
+        instructions=instructions,
+        questions=validated_questions,
+    )
+

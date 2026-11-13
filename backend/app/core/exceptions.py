@@ -11,17 +11,21 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 logger = logging.getLogger(__name__)
 
 
-def _error_response(status_code: int, detail: Any) -> JSONResponse:
-    """Return the standard API error envelope."""
+def _error_response(
+    status_code: int,
+    detail: Any,
+    headers: dict[str, str] | None = None,
+) -> JSONResponse:
+    """Return the standard API error envelope, preserving any custom HTTP response headers."""
     message = detail if isinstance(detail, str) else "The request could not be processed."
-    return JSONResponse(status_code=status_code, content={"detail": message})
+    return JSONResponse(status_code=status_code, content={"detail": message}, headers=headers)
 
 
 async def handle_http_exception(
     _request: Request, exception: StarletteHTTPException
 ) -> JSONResponse:
-    """Serialize expected HTTP errors using one response shape."""
-    return _error_response(exception.status_code, exception.detail)
+    """Serialize expected HTTP errors using one response shape while preserving headers."""
+    return _error_response(exception.status_code, exception.detail, headers=exception.headers)
 
 
 async def handle_validation_error(
