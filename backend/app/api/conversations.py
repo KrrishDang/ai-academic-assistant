@@ -3,7 +3,7 @@
 import json
 import logging
 import uuid
-from typing import Annotated, List
+from typing import Annotated, Any, List
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -27,6 +27,7 @@ from app.schemas.conversation import (
 )
 from app.services.gemini_service import GeminiService, GeminiServiceError
 from app.services.generation_service import GenerationService
+from app.services.grounding_service import GroundingService
 from app.services.prompt_service import PromptService
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ def _get_conversation_or_404(
 
     - Authenticated users can only access their own conversations or public legacy ones.
     - Anonymous users can only access unowned (user_id IS NULL) conversations.
+    - Notebook conversations require authentication and user ownership matching the notebook.
     - Non-existent or inaccessible conversations return 404 to avoid data enumeration.
     """
     conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
@@ -54,6 +56,16 @@ def _get_conversation_or_404(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
     else:
         if conversation.user_id is not None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
+
+    if conversation.notebook_id is not None:
+        if not current_user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required for notebook conversations.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if conversation.notebook and conversation.notebook.user_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found.")
 
     return conversation
@@ -176,7 +188,7 @@ def get_conversation_messages(
     return conversation.messages
 
 
-def _sse_event(event: str, data: dict[str, str]) -> str:
+def _sse_event(event: str, data: dict[str, Any]) -> str:
     """Encode one server-sent event without allowing payloads to break its framing."""
     return f"event: {event}\ndata: {json.dumps(data)}\n\n"
 
@@ -217,6 +229,18 @@ async def chat_in_conversation(
         model_name = request.model if request.model else settings.gemini_model
         temperature = request.temperature
 
+        # Build notebook grounding context if this conversation is notebook-scoped
+        grounding_context = None
+        citations = []
+        if conversation.notebook_id is not None and current_user:
+            grounding_service = GroundingService(settings)
+            grounding_context, citations = grounding_service.build_grounding_context(
+                notebook_id=conversation.notebook_id,
+                user_id=current_user.id,
+                query=request.message,
+                db=db,
+            )
+
         ai_response_text = ""
         try:
             gemini_service = GeminiService(settings)
@@ -225,6 +249,7 @@ async def chat_in_conversation(
                 messages=all_messages,
                 doc_filename=doc_filename,
                 doc_text=doc_text,
+                grounding_context=grounding_context,
                 model=model_name,
                 temperature=temperature,
             )
@@ -232,6 +257,9 @@ async def chat_in_conversation(
             async for delta in stream:
                 ai_response_text += delta
                 yield _sse_event("delta", {"text": delta})
+
+            if citations:
+                yield _sse_event("citations", {"citations": citations})
 
             # Save the full AI response to the database
             ai_msg = Message(
@@ -302,6 +330,18 @@ async def edit_message_and_regenerate(
         model_name = request.model if request.model else settings.gemini_model
         temperature = request.temperature
 
+        # Build notebook grounding context if this conversation is notebook-scoped
+        grounding_context = None
+        citations = []
+        if conversation.notebook_id is not None and current_user:
+            grounding_service = GroundingService(settings)
+            grounding_context, citations = grounding_service.build_grounding_context(
+                notebook_id=conversation.notebook_id,
+                user_id=current_user.id,
+                query=request.message,
+                db=db,
+            )
+
         ai_response_text = ""
         try:
             gemini_service = GeminiService(settings)
@@ -310,6 +350,7 @@ async def edit_message_and_regenerate(
                 messages=all_messages,
                 doc_filename=doc_filename,
                 doc_text=doc_text,
+                grounding_context=grounding_context,
                 model=model_name,
                 temperature=temperature,
             )
@@ -317,6 +358,9 @@ async def edit_message_and_regenerate(
             async for delta in stream:
                 ai_response_text += delta
                 yield _sse_event("delta", {"text": delta})
+
+            if citations:
+                yield _sse_event("citations", {"citations": citations})
 
             ai_msg = Message(
                 conversation_id=id,

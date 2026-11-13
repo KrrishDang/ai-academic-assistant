@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.5-flash"
     gemini_timeout_seconds: float = Field(default=45.0, gt=0)
     gemini_max_retries: int = Field(default=3, ge=0, le=5)
+    grounding_chunk_size: int = Field(default=1200, gt=100)
+    grounding_chunk_overlap: int = Field(default=200, ge=0)
+    grounding_max_context_chars: int = Field(default=32_000, gt=1000)
     upload_dir: str = "uploads"
     storage_backend: str = "local"
     max_upload_size_bytes: int = 20 * 1024 * 1024

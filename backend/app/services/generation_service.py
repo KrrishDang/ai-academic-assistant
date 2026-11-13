@@ -134,6 +134,7 @@ class GenerationService:
         messages: list,
         doc_filename: str | None = None,
         doc_text: str | None = None,
+        grounding_context: str | None = None,
         model: str | None = None,
         temperature: float | None = None,
     ) -> AsyncIterator[str]:
@@ -151,7 +152,10 @@ class GenerationService:
                 )
             )
 
-        system_instruction = self._prompt_service.build_chat_system_instruction(doc_filename, doc_text)
+        if grounding_context is not None:
+            system_instruction = self._prompt_service.build_grounded_chat_system_instruction(grounding_context)
+        else:
+            system_instruction = self._prompt_service.build_chat_system_instruction(doc_filename, doc_text)
 
         async for delta in self._gemini_service.stream_chat(
             system_instruction=system_instruction,
