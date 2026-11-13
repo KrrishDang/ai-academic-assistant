@@ -3,6 +3,22 @@ const apiBaseUrl =
 
 export { apiBaseUrl };
 
+const AUTH_TOKEN_KEY = "studyhub_token";
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token: string | null): void {
+  if (typeof window === "undefined") return;
+  if (token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
 export function getAnonymousSessionId(): string {
   if (typeof window === "undefined") return "server";
   let id = localStorage.getItem("anonymous_session_id");
@@ -16,10 +32,82 @@ export function getAnonymousSessionId(): string {
 }
 
 function defaultHeaders(extra: Record<string, string> = {}): Record<string, string> {
-  return {
+  const headers: Record<string, string> = {
     "X-Session-ID": getAnonymousSessionId(),
     ...extra,
   };
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export type UserResponse = {
+  id: string;
+  email: string;
+  display_name: string | null;
+  created_at: string;
+};
+
+export type TokenResponse = {
+  access_token: string;
+  token_type: string;
+};
+
+export type UserRegisterRequest = {
+  email: string;
+  password: string;
+  display_name?: string;
+};
+
+export type UserLoginRequest = {
+  email: string;
+  password: string;
+};
+
+export async function registerUser(payload: UserRegisterRequest): Promise<UserResponse> {
+  const response = await fetch(`${apiBaseUrl}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Registration failed. Please try again.");
+  }
+  return response.json();
+}
+
+export async function loginUser(payload: UserLoginRequest): Promise<TokenResponse> {
+  const response = await fetch(`${apiBaseUrl}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Invalid email or password.");
+  }
+  return response.json();
+}
+
+export async function getCurrentUser(): Promise<UserResponse> {
+  const token = getAuthToken();
+  if (!token) {
+    throw new Error("No authentication token available.");
+  }
+  const response = await fetch(`${apiBaseUrl}/auth/me`, {
+    method: "GET",
+    headers: defaultHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const err = new Error(errorData.detail || "Authentication expired.");
+    (err as any).status = response.status;
+    throw err;
+  }
+  return response.json();
 }
 
 export type UploadError = Error & { status?: number };

@@ -1,122 +1,110 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Catppuccin Mocha Official Global Tokens ───────────────────────── */
-:root,
-html,
-body,
-#root,
-.dark,
-[data-theme="catppuccin-mocha"] {
-  color-scheme: dark !important;
-  
-  /* Official Catppuccin Mocha Palette */
-  --background: 240 21% 15%; /* Base #1E1E2E */
-  --foreground: 226 64% 88%; /* Text #CDD6F4 */
-  --card: 240 21% 12%; /* Mantle #181825 */
-  --card-foreground: 226 64% 88%;
-  --popover: 240 21% 12%; /* Mantle #181825 */
-  --popover-foreground: 226 64% 88%;
-  --primary: 267 84% 81%; /* Mauve #CBA6F7 */
-  --primary-foreground: 240 21% 9%; /* Crust #11111B */
-  --secondary: 240 21% 9%; /* Crust #11111B */
-  --secondary-foreground: 226 64% 88%;
-  --muted: 240 21% 12%;
-  --muted-foreground: 233 10% 47%; /* Overlay0 #6C7086 */
-  --accent: 237 16% 23%; /* Surface0 #313244 */
-  --accent-foreground: 267 84% 81%; /* Mauve #CBA6F7 */
-  --destructive: 343 81% 75%; /* Red #F38BA8 */
-  --destructive-foreground: 240 21% 9%;
-  --border: 237 16% 23%; /* Surface0 #313244 */
-  --input: 235 13% 31%; /* Surface1 #45475A */
-  --ring: 267 84% 81%;
+/* ─── StudyHub V2 Premium Design Tokens ────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+
+  /* Primary Palette: Light Theme */
+  --background: 0 0% 99%;         /* Pure / Off-White #FCFCFC */
+  --foreground: 240 7% 4%;        /* Midnight Black #0B0B0C */
+  --card: 0 0% 100%;              /* #FFFFFF */
+  --card-foreground: 240 7% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 7% 4%;
+  --primary: 74 90% 42%;          /* Accessible Darker Lime #82A900 for Light Mode */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 5% 95%;        /* #F1F1F3 */
+  --secondary-foreground: 240 7% 8%;
+  --muted: 240 5% 95%;
+  --muted-foreground: 240 4% 45%; /* #6F6F76 */
+  --accent: 74 90% 94%;           /* Very subtle lime tint */
+  --accent-foreground: 240 7% 4%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 5% 89%;           /* #E2E2E6 */
+  --input: 240 5% 89%;
+  --ring: 74 90% 42%;
   --radius: 0.75rem;
 
-  background-color: #1e1e2e !important;
-  color: #cdd6f4 !important;
+  /* Custom StudyHub Brand Palette */
+  --brand-midnight: #0B0B0C;
+  --brand-white: #FFFFFF;
+  --brand-lime: #C6F432;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Primary Palette: Dark Theme (Midnight Black + Lime Green + White) */
+  --background: 240 7% 4%;        /* Midnight Black #0B0B0C */
+  --foreground: 0 0% 98%;         /* #FAFAFA */
+  --card: 240 5% 8%;              /* Dark Card Surface #141416 */
+  --card-foreground: 0 0% 98%;
+  --popover: 240 5% 8%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 74 90% 58%;          /* Electric Lime #C6F432 */
+  --primary-foreground: 240 7% 4%;/* Midnight Black Text on Lime */
+  --secondary: 240 4% 13%;        /* #1F1F24 */
+  --secondary-foreground: 0 0% 96%;
+  --muted: 240 4% 11%;            /* #19191D */
+  --muted-foreground: 240 4% 65%; /* #A1A1A8 */
+  --accent: 240 4% 15%;           /* #24242A */
+  --accent-foreground: 74 90% 58%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4% 16%;           /* Subtle Border #27272E */
+  --input: 240 4% 16%;
+  --ring: 74 90% 58%;
 }
 
 html,
 body,
 #root {
   min-height: 100vh;
-  background-color: #1e1e2e !important;
-  color: #cdd6f4 !important;
-  color-scheme: dark !important;
+  margin: 0;
+  padding: 0;
 }
 
 @layer base {
   * {
     @apply border-border;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary;
-    background-color: #1e1e2e !important;
-    color: #cdd6f4 !important;
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(267, 84%, 81%, 0.08) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(267, 84%, 81%, 0.04) 0px, transparent 50%);
-    background-attachment: fixed;
+    @apply bg-background text-foreground antialiased selection:bg-[#C6F432]/30 selection:text-[#0B0B0C] dark:selection:text-[#C6F432];
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  code, pre, kbd {
+    font-family: 'JetBrains Mono', monospace;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'JetBrains Mono', monospace;
-    @apply tracking-tight font-extrabold;
+    @apply tracking-tight font-bold;
   }
 }
 
-/* Custom premium animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
-
-@keyframes shimmer {
-  100% { transform: translateX(100%); }
-}
-
-.animate-float {
-  animation: float 5s ease-in-out infinite;
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 3s ease-in-out infinite;
-}
-
-.shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.shimmer::after {
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.1) 20%,
-    rgba(255, 255, 255, 0.2) 60%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  animation: shimmer 2s infinite;
-  content: '';
-}
-
-/* Minimalist Scrollbars matching Catppuccin styles */
+/* Minimalist Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -124,25 +112,20 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--secondary));
+  background: hsl(var(--border));
   border-radius: 9999px;
   transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--accent));
+  background: hsl(var(--muted-foreground));
 }
 
-/* Premium 3D Flippable Flashcards utilities */
-.perspective {
-  perspective: 1000px;
+/* Visual Glow and Subtle Accents */
+.lime-glow {
+  box-shadow: 0 0 20px -5px rgba(198, 244, 50, 0.35);
 }
-.preserve-3d {
-  transform-style: preserve-3d;
-}
-.backface-hidden {
-  backface-visibility: hidden;
-}
-.rotate-y-180 {
-  transform: rotateY(180deg);
+
+.lime-border-glow {
+  box-shadow: 0 0 0 1px #C6F432, 0 0 16px -4px rgba(198, 244, 50, 0.4);
 }
