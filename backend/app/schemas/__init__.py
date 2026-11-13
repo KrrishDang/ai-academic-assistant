@@ -18,6 +18,17 @@ from app.schemas.notebook import (
     NotebookSummaryResponse,
     NotebookDetailResponse,
 )
+from app.schemas.study_material import (
+    StudyGuideGenerateRequest,
+    FlashcardsGenerateRequest,
+    ExamPaperGenerateRequest,
+    FlashcardItem,
+    FlashcardsContent,
+    ExamQuestionItem,
+    ExamPaperContent,
+    StudyMaterialResponse,
+    StudyMaterialSummaryResponse,
+)
 
 __all__ = [
     "DocumentUploadResponse",
@@ -38,4 +49,13 @@ __all__ = [
     "NotebookResponse",
     "NotebookSummaryResponse",
     "NotebookDetailResponse",
+    "StudyGuideGenerateRequest",
+    "FlashcardsGenerateRequest",
+    "ExamPaperGenerateRequest",
+    "FlashcardItem",
+    "FlashcardsContent",
+    "ExamQuestionItem",
+    "ExamPaperContent",
+    "StudyMaterialResponse",
+    "StudyMaterialSummaryResponse",
 ]

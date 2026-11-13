@@ -46,3 +46,8 @@ class Notebook(Base):
         foreign_keys="[Conversation.notebook_id]",
         cascade="all, delete-orphan",
     )
+    study_materials = relationship(
+        "StudyMaterial",
+        back_populates="notebook",
+        cascade="all, delete-orphan",
+    )

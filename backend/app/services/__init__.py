@@ -6,6 +6,7 @@ from app.services.extraction_service import ExtractionService
 from app.services.export_service import ExportService
 from app.services.generation_service import GenerationService
 from app.services.chunk_service import ChunkService
+from app.services.notebook_study_service import NotebookStudyService
 
 __all__ = [
     "GeminiService",
@@ -15,4 +16,5 @@ __all__ = [
     "ExportService",
     "GenerationService",
     "ChunkService",
+    "NotebookStudyService",
 ]
