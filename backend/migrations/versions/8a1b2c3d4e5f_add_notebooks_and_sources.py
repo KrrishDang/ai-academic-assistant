@@ -18,6 +18,62 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _validate_or_create_fk(
+    table_name: str,
+    column_name: str,
+    expected_table: str,
+    expected_col: str,
+    expected_ondelete: str,
+    existing_fks: list,
+    fk_name: str,
+) -> None:
+    """Validate that an existing FK on column_name references expected target with expected ondelete,
+    or create it if missing. Avoids duplicate constraints and stops on unexpected FK definitions.
+    """
+    for fk in existing_fks:
+        if fk.get("constrained_columns") == [column_name]:
+            ref_table = fk.get("referred_table")
+            ref_cols = fk.get("referred_columns")
+            opts = fk.get("options", {}) or {}
+            ondelete = (opts.get("ondelete") or "").upper()
+
+            if ref_table == expected_table and ref_cols == [expected_col]:
+                if ondelete == expected_ondelete.upper():
+                    # Exactly matches expected relationship and ON DELETE cascade behavior
+                    return
+                else:
+                    raise RuntimeError(
+                        f"Existing foreign key '{fk.get('name')}' on {table_name}.{column_name} "
+                        f"references {ref_table}.{ref_cols} with ON DELETE {ondelete}, "
+                        f"expected ON DELETE {expected_ondelete.upper()}. "
+                        f"Cannot safely replace without manual verification."
+                    )
+            else:
+                raise RuntimeError(
+                    f"Unexpected foreign key '{fk.get('name')}' on {table_name}.{column_name} "
+                    f"references {ref_table}.{ref_cols}, expected {expected_table}.{expected_col}. "
+                    f"Cannot safely replace without manual verification."
+                )
+
+    # Missing: safely create the expected foreign key
+    op.create_foreign_key(
+        fk_name,
+        table_name,
+        expected_table,
+        [column_name],
+        [expected_col],
+        ondelete=expected_ondelete,
+    )
+
+
+def _ensure_index(table_name: str, column_name: str, idx_name: str, existing_indexes: list) -> None:
+    """Ensure an index on column_name exists, avoiding duplicates by column or name."""
+    for idx in existing_indexes:
+        if idx.get("column_names") == [column_name] or idx.get("name") == idx_name:
+            return
+    op.create_index(idx_name, table_name, [column_name], unique=False)
+
+
 def upgrade() -> None:
     bind = op.get_bind()
     inspector = sa.inspect(bind)
@@ -65,69 +121,56 @@ def upgrade() -> None:
     # Re-inspect conversations columns, foreign keys, and indexes
     conv_columns = {col['name']: col for col in inspector.get_columns('conversations')}
     conv_fks = inspector.get_foreign_keys('conversations')
-    conv_indexes = {idx['name'] for idx in inspector.get_indexes('conversations')}
+    conv_indexes = inspector.get_indexes('conversations')
 
     # 3. Handle user_id on conversations:
     # If user_id is missing (e.g. Railway V1 database), add it as nullable UUID
     # referencing users.id with ON DELETE CASCADE and create its index.
     if 'user_id' not in conv_columns:
         op.add_column('conversations', sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=True))
-        op.create_foreign_key(
-            'fk_conversations_user_id',
-            'conversations',
-            'users',
-            ['user_id'],
-            ['id'],
-            ondelete='CASCADE'
-        )
-        op.create_index(op.f('ix_conversations_user_id'), 'conversations', ['user_id'], unique=False)
     else:
         # If user_id exists, ensure it is nullable to support anonymous visitor sessions
         if not conv_columns['user_id']['nullable']:
             op.alter_column('conversations', 'user_id', existing_type=postgresql.UUID(as_uuid=True), nullable=True)
-        # Ensure foreign key to users.id exists
-        has_user_fk = any('user_id' in fk.get('constrained_columns', []) for fk in conv_fks)
-        if not has_user_fk:
-            op.create_foreign_key(
-                'fk_conversations_user_id',
-                'conversations',
-                'users',
-                ['user_id'],
-                ['id'],
-                ondelete='CASCADE'
-            )
-        # Ensure index exists
-        idx_name = op.f('ix_conversations_user_id')
-        if idx_name not in conv_indexes:
-            op.create_index(idx_name, 'conversations', ['user_id'], unique=False)
+
+    # Ensure foreign key to users.id exists with ON DELETE CASCADE
+    _validate_or_create_fk(
+        table_name='conversations',
+        column_name='user_id',
+        expected_table='users',
+        expected_col='id',
+        expected_ondelete='CASCADE',
+        existing_fks=conv_fks,
+        fk_name='fk_conversations_user_id',
+    )
+    _ensure_index(
+        table_name='conversations',
+        column_name='user_id',
+        idx_name=op.f('ix_conversations_user_id'),
+        existing_indexes=conv_indexes,
+    )
 
     # 4. Handle notebook_id on conversations:
     # Add notebook_id if not present, link to notebooks.id with ON DELETE CASCADE and index
     if 'notebook_id' not in conv_columns:
         op.add_column('conversations', sa.Column('notebook_id', postgresql.UUID(as_uuid=True), nullable=True))
-        op.create_foreign_key(
-            'fk_conversations_notebook_id',
-            'conversations',
-            'notebooks',
-            ['notebook_id'],
-            ['id'],
-            ondelete='CASCADE'
-        )
-        op.create_index(op.f('ix_conversations_notebook_id'), 'conversations', ['notebook_id'], unique=False)
-    else:
-        has_nb_fk = any('notebook_id' in fk.get('constrained_columns', []) for fk in conv_fks)
-        if not has_nb_fk:
-            op.create_foreign_key(
-                'fk_conversations_notebook_id',
-                'conversations',
-                'notebooks',
-                ['notebook_id'],
-                ['id'],
-                ondelete='CASCADE'
-            )
-        idx_name = op.f('ix_conversations_notebook_id')
-        if idx_name not in conv_indexes:
-            op.create_index(idx_name, 'conversations', ['notebook_id'], unique=False)
+
+    # Ensure foreign key to notebooks.id exists with ON DELETE CASCADE
+    _validate_or_create_fk(
+        table_name='conversations',
+        column_name='notebook_id',
+        expected_table='notebooks',
+        expected_col='id',
+        expected_ondelete='CASCADE',
+        existing_fks=conv_fks,
+        fk_name='fk_conversations_notebook_id',
+    )
+    _ensure_index(
+        table_name='conversations',
+        column_name='notebook_id',
+        idx_name=op.f('ix_conversations_notebook_id'),
+        existing_indexes=conv_indexes,
+    )
 
 
 def downgrade() -> None:
@@ -148,13 +191,13 @@ def downgrade() -> None:
         if 'notebook_id' in conv_columns:
             op.drop_column('conversations', 'notebook_id')
 
-        # Review user_id downgrade:
-        # Never drop pre-existing columns or constraints unintentionally.
-        # If user_id exists and is nullable, only attempt to revert nullability if there are no NULL values.
-        if 'user_id' in conv_columns and conv_columns['user_id']['nullable']:
-            null_count = bind.execute(sa.text("SELECT COUNT(*) FROM conversations WHERE user_id IS NULL")).scalar()
-            if null_count == 0:
-                op.alter_column('conversations', 'user_id', existing_type=postgresql.UUID(as_uuid=True), nullable=False)
+        # Note on conversations.user_id downgrade:
+        # conversations.user_id is intentionally retained as nullable and never dropped or altered to NOT NULL.
+        # Because Alembic does not record whether conversations.user_id pre-existed before this migration
+        # (e.g. from 53013a0468a4) or was added to support a legacy Railway V1 schema lacking user_id,
+        # dropping the column could cause catastrophic data loss on databases where user_id was pre-existing,
+        # and altering to NOT NULL would break anonymous visitor sessions (user_id IS NULL).
+        # Retaining user_id as nullable safely preserves all existing conversation rows and anonymous sessions.
 
     # Drop sources table if present
     if 'sources' in tables:

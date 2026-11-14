@@ -52,10 +52,22 @@ class TestRailwayV1MigrationCompatibility(unittest.TestCase):
             parsed._replace(path=f"/{cls.test_db_v2_name}")
         )
 
+        cls.test_db_v3_name = f"test_downgrade_{uuid.uuid4().hex[:8]}"
+        cls.test_db_v3_url = urllib.parse.urlunparse(
+            parsed._replace(path=f"/{cls.test_db_v3_name}")
+        )
+
+        cls.test_db_v4_name = f"test_fk_val_{uuid.uuid4().hex[:8]}"
+        cls.test_db_v4_url = urllib.parse.urlunparse(
+            parsed._replace(path=f"/{cls.test_db_v4_name}")
+        )
+
         # Create isolated test databases
         with cls.admin_engine.connect() as conn:
             conn.execute(text(f'CREATE DATABASE "{cls.test_db_v1_name}"'))
             conn.execute(text(f'CREATE DATABASE "{cls.test_db_v2_name}"'))
+            conn.execute(text(f'CREATE DATABASE "{cls.test_db_v3_name}"'))
+            conn.execute(text(f'CREATE DATABASE "{cls.test_db_v4_name}"'))
 
     @classmethod
     def tearDownClass(cls):
@@ -69,11 +81,18 @@ class TestRailwayV1MigrationCompatibility(unittest.TestCase):
             conn.execute(text(f"""
                 SELECT pg_terminate_backend(pid)
                 FROM pg_stat_activity
-                WHERE datname IN ('{cls.test_db_v1_name}', '{cls.test_db_v2_name}')
+                WHERE datname IN (
+                    '{cls.test_db_v1_name}',
+                    '{cls.test_db_v2_name}',
+                    '{cls.test_db_v3_name}',
+                    '{cls.test_db_v4_name}'
+                )
                 AND pid <> pg_backend_pid();
             """))
             conn.execute(text(f'DROP DATABASE IF EXISTS "{cls.test_db_v1_name}"'))
             conn.execute(text(f'DROP DATABASE IF EXISTS "{cls.test_db_v2_name}"'))
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{cls.test_db_v3_name}"'))
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{cls.test_db_v4_name}"'))
         cls.admin_engine.dispose()
 
     def _get_alembic_config(self, target_db_url: str) -> Config:
@@ -280,6 +299,162 @@ class TestRailwayV1MigrationCompatibility(unittest.TestCase):
             self.assertTrue(conv_cols["user_id"]["nullable"], "user_id must be altered to nullable")
 
         engine_v2.dispose()
+
+    def test_03_downgrade_preserves_nullable_user_id_on_empty_and_populated_tables(self):
+        """Verify downgrade of 8a1b2c3d4e5f leaves conversations.user_id nullable whether empty or populated."""
+        cfg = self._get_alembic_config(self.test_db_v3_url)
+        engine_v3 = create_engine(self.test_db_v3_url)
+
+        # 1. Migrate to 61a84f3e9b10 and simulate Railway V1 by stripping user_id
+        command.upgrade(cfg, "61a84f3e9b10")
+        with engine_v3.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            inspector = inspect(conn)
+            fks = inspector.get_foreign_keys("conversations")
+            for fk in fks:
+                if "user_id" in fk.get("constrained_columns", []):
+                    conn.execute(text(f"ALTER TABLE conversations DROP CONSTRAINT \"{fk['name']}\""))
+            indexes = inspector.get_indexes("conversations")
+            for idx in indexes:
+                if "user_id" in idx.get("column_names", []):
+                    conn.execute(text(f"DROP INDEX IF EXISTS \"{idx['name']}\""))
+            cols = [c["name"] for c in inspector.get_columns("conversations")]
+            if "user_id" in cols:
+                conn.execute(text("ALTER TABLE conversations DROP COLUMN user_id"))
+
+        # Table is completely empty here
+        # 2. Upgrade to 8a1b2c3d4e5f on EMPTY table
+        command.upgrade(cfg, "8a1b2c3d4e5f")
+        with engine_v3.connect() as conn:
+            conv_cols = {c["name"]: c for c in inspect(conn).get_columns("conversations")}
+            self.assertIn("user_id", conv_cols)
+            self.assertTrue(conv_cols["user_id"]["nullable"])
+
+        # 3. Downgrade to 7a9b8c7d6e5f on EMPTY table
+        # Must NOT alter user_id to NOT NULL
+        command.downgrade(cfg, "7a9b8c7d6e5f")
+        with engine_v3.connect() as conn:
+            conv_cols = {c["name"]: c for c in inspect(conn).get_columns("conversations")}
+            self.assertIn("user_id", conv_cols, "user_id must be retained in downgrade")
+            self.assertTrue(
+                conv_cols["user_id"]["nullable"],
+                "conversations.user_id must remain nullable in downgrade even when table is empty"
+            )
+
+        # 4. Now populate with anonymous V1 data (user_id IS NULL)
+        doc_id = uuid.uuid4()
+        conv_id = uuid.uuid4()
+        session_id = "anon_session_test_downgrade"
+        with engine_v3.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+            conn.execute(text("""
+                INSERT INTO documents (id, original_filename, content_type, file_size_bytes, page_count,
+                                      text_character_count, storage_key, sha256, extracted_text, session_id, created_at)
+                VALUES (:id, 'v1_test.pdf', 'application/pdf', 2048, 2, 250, 'v1_k3', 'v1_sha3',
+                        'Sample syllabus text.', :session_id, now())
+            """), {"id": doc_id, "session_id": session_id})
+            conn.execute(text("""
+                INSERT INTO conversations (id, document_id, title, session_id, created_at, updated_at)
+                VALUES (:id, :doc_id, 'Anon Downgrade Test', :session_id, now(), now())
+            """), {"id": conv_id, "doc_id": doc_id, "session_id": session_id})
+
+        # 5. Upgrade all the way to head
+        command.upgrade(cfg, "head")
+        with engine_v3.connect() as conn:
+            rev = conn.execute(text("SELECT version_num FROM alembic_version")).scalar()
+            self.assertEqual(rev, "b2c3d4e5f6a7")
+
+        # 6. Downgrade back to 7a9b8c7d6e5f with anonymous records present
+        command.downgrade(cfg, "7a9b8c7d6e5f")
+        with engine_v3.connect() as conn:
+            conv_cols = {c["name"]: c for c in inspect(conn).get_columns("conversations")}
+            self.assertIn("user_id", conv_cols)
+            self.assertTrue(
+                conv_cols["user_id"]["nullable"],
+                "conversations.user_id must remain nullable when anonymous records exist"
+            )
+            # Verify the row is preserved with NULL user_id and valid session_id
+            row = conn.execute(text("SELECT id, user_id, session_id, title FROM conversations WHERE id = :id"),
+                               {"id": conv_id}).mappings().one()
+            self.assertEqual(row["id"], conv_id)
+            self.assertIsNone(row["user_id"])
+            self.assertEqual(row["session_id"], session_id)
+            self.assertEqual(row["title"], "Anon Downgrade Test")
+
+        engine_v3.dispose()
+
+    def test_04_foreign_key_validation_and_duplicate_protection(self):
+        """Verify foreign key validation correctly validates matches, avoids duplication, and rejects invalid FKs."""
+        import importlib
+        migration_mod = importlib.import_module("migrations.versions.8a1b2c3d4e5f_add_notebooks_and_sources")
+        validate_or_create_fk = migration_mod._validate_or_create_fk
+
+        cfg = self._get_alembic_config(self.test_db_v4_url)
+        engine_v4 = create_engine(self.test_db_v4_url)
+
+        # 1. Upgrade to 8a1b2c3d4e5f
+        command.upgrade(cfg, "8a1b2c3d4e5f")
+
+        with engine_v4.connect() as conn:
+            inspector = inspect(conn)
+            conv_fks = inspector.get_foreign_keys("conversations")
+
+            # Check that conversations.user_id FK exists and is single-column
+            user_fks = [fk for fk in conv_fks if fk.get("constrained_columns") == ["user_id"]]
+            self.assertEqual(len(user_fks), 1, "Expected exactly 1 foreign key on conversations.user_id")
+            fk_info = user_fks[0]
+            self.assertEqual(fk_info["referred_table"], "users")
+            self.assertEqual(fk_info["referred_columns"], ["id"])
+            self.assertEqual((fk_info.get("options", {}) or {}).get("ondelete", "").upper(), "CASCADE")
+
+        # 2. Test duplicate protection: running validate_or_create_fk on existing matching FK does nothing
+        # (does not attempt to re-create or duplicate constraint)
+        validate_or_create_fk(
+            table_name="conversations",
+            column_name="user_id",
+            expected_table="users",
+            expected_col="id",
+            expected_ondelete="CASCADE",
+            existing_fks=conv_fks,
+            fk_name="fk_conversations_user_id",
+        )
+
+        # 3. Test that unexpected referred_table raises RuntimeError
+        with self.assertRaises(RuntimeError) as ctx_table:
+            validate_or_create_fk(
+                table_name="conversations",
+                column_name="user_id",
+                expected_table="documents",  # Mismatch: FK points to users, not documents
+                expected_col="id",
+                expected_ondelete="CASCADE",
+                existing_fks=conv_fks,
+                fk_name="fk_conversations_user_id",
+            )
+        self.assertIn("Unexpected foreign key", str(ctx_table.exception))
+        self.assertIn("references users", str(ctx_table.exception))
+        self.assertIn("expected documents.id", str(ctx_table.exception))
+
+        # 4. Test that unexpected ON DELETE behavior raises RuntimeError
+        mock_mismatched_fk = [
+            {
+                "name": "fk_conversations_user_id",
+                "constrained_columns": ["user_id"],
+                "referred_table": "users",
+                "referred_columns": ["id"],
+                "options": {"ondelete": "SET NULL"},  # Mismatch: expected CASCADE
+            }
+        ]
+        with self.assertRaises(RuntimeError) as ctx_ondelete:
+            validate_or_create_fk(
+                table_name="conversations",
+                column_name="user_id",
+                expected_table="users",
+                expected_col="id",
+                expected_ondelete="CASCADE",
+                existing_fks=mock_mismatched_fk,
+                fk_name="fk_conversations_user_id",
+            )
+        self.assertIn("references users.['id'] with ON DELETE SET NULL, expected ON DELETE CASCADE", str(ctx_ondelete.exception))
+
+        engine_v4.dispose()
 
 
 if __name__ == "__main__":
