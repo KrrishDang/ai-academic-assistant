@@ -4,8 +4,8 @@ from functools import lru_cache
 from typing import Any
 
 import dotenv
-# Force-load local environment variables, overriding conflicting system environment variables
-dotenv.load_dotenv(override=True)
+# Load local environment variables without overwriting system/container environment variables
+dotenv.load_dotenv(override=False)
 
 from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     max_pdf_pages: int = 500
     aws_region: str | None = None
     aws_s3_bucket: str | None = None
+    db_connect_timeout_seconds: float = Field(default=60.0, ge=5.0, le=300.0)
+    db_connect_retry_interval: float = Field(default=1.0, ge=0.2, le=10.0)
 
     @model_validator(mode="after")
     def validate_jwt_secret_key(self) -> "Settings":
@@ -93,7 +95,14 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         """Return validated, comma-separated browser origins."""
         origins = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()]
-        defaults = ["http://localhost:5173", "http://localhost:3000", "http://localhost:4173"]
+        defaults = [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:4173",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:4173",
+        ]
         for d in defaults:
             if d not in origins:
                 origins.append(d)

@@ -6,6 +6,7 @@ import { AuthProvider } from "@/features/auth/AuthContext";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { DocumentProvider } from "@/features/documents/DocumentContext";
 import { ConversationProvider } from "@/features/conversations/ConversationContext";
+import { ToastProvider } from "@/components/ui/toast";
 
 import { DashboardPage } from "@/pages/DashboardPage";
 import { UploadPage } from "@/pages/UploadPage";
@@ -27,7 +28,8 @@ export function App() {
       <AuthProvider>
         <DocumentProvider>
           <ConversationProvider>
-            <Routes>
+            <ToastProvider>
+              <Routes>
               {/* Public Authentication Routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -70,7 +72,8 @@ export function App() {
                 <Route path="*" element={<Navigate to="/404" replace />} />
               </Route>
             </Routes>
-          </ConversationProvider>
+          </ToastProvider>
+        </ConversationProvider>
         </DocumentProvider>
       </AuthProvider>
     </ThemeProvider>
