@@ -1,11 +1,15 @@
 """Global workspace search API router."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_optional_current_user
 from app.db.session import get_db_session
 from app.models.conversation import Conversation, Message
 from app.models.document import Document
+from app.models.user import User
 from app.schemas.search import SearchResultsResponse
 
 router = APIRouter(prefix="/search")
@@ -14,17 +18,30 @@ router = APIRouter(prefix="/search")
 def global_search(
     q: str = Query(..., min_length=1),
     x_session_id: str | None = Header(None, alias="X-Session-ID"),
+    current_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> dict:
     """Perform a query matching documents, chat titles, and historical message exchanges."""
-    doc_query = db.query(Document).filter(Document.original_filename.ilike(f"%{q}%"))
-    conv_query = db.query(Conversation).filter(Conversation.title.ilike(f"%{q}%"))
-    msg_query = db.query(Message).join(Conversation).filter(Message.content.ilike(f"%{q}%"))
+    if not current_user:
+        return {
+            "documents": [],
+            "conversations": [],
+            "messages": [],
+        }
 
-    if x_session_id:
-        doc_query = doc_query.filter((Document.session_id == x_session_id) | (Document.session_id.is_(None)))
-        conv_query = conv_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
-        msg_query = msg_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
+    doc_query = (
+        db.query(Document)
+        .filter(Document.user_id == current_user.id, Document.original_filename.ilike(f"%{q}%"))
+    )
+    conv_query = (
+        db.query(Conversation)
+        .filter(Conversation.user_id == current_user.id, Conversation.title.ilike(f"%{q}%"))
+    )
+    msg_query = (
+        db.query(Message)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .filter(Conversation.user_id == current_user.id, Message.content.ilike(f"%{q}%"))
+    )
 
     docs = doc_query.all()
     convs = conv_query.all()

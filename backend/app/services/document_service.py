@@ -41,7 +41,13 @@ class DocumentService:
         self._pdf_service = PdfService(max_pages=settings.max_pdf_pages)
         self._storage = create_document_storage(settings)
 
-    async def process(self, file: UploadFile, db: Session, session_id: str | None = None) -> Document:
+    async def process(
+        self,
+        file: UploadFile,
+        db: Session,
+        session_id: str | None = None,
+        user_id: uuid.UUID | None = None,
+    ) -> Document:
         """Validate, extract, store the PDF file and save metadata to DB."""
         doc_id = uuid.uuid4()
         staged_upload = await self._stage_upload(file)
@@ -60,8 +66,12 @@ class DocumentService:
 
             # Check for duplicate upload in session if session_id is provided, else overall
             query = db.query(Document).filter(Document.sha256 == file_sha)
-            if session_id:
-                query = query.filter(Document.session_id == session_id)
+            if user_id is not None:
+                query = query.filter(Document.user_id == user_id)
+            elif session_id:
+                query = query.filter(Document.session_id == session_id, Document.user_id.is_(None))
+            else:
+                query = query.filter(Document.user_id.is_(None), Document.session_id.is_(None))
             existing_doc = query.first()
             if existing_doc:
                 logger.info(
@@ -87,6 +97,7 @@ class DocumentService:
                 sha256=file_sha,
                 extracted_text=extracted.text,
                 session_id=session_id,
+                user_id=user_id,
             )
 
             db.add(document_record)
@@ -109,10 +120,19 @@ class DocumentService:
         finally:
             staged_upload.path.unlink(missing_ok=True)
 
-    async def replace(self, file: UploadFile, db: Session, document_id: uuid.UUID) -> Document:
+    async def replace(
+        self,
+        file: UploadFile,
+        db: Session,
+        document_id: uuid.UUID,
+        user_id: uuid.UUID | None = None,
+    ) -> Document:
         """Replace an existing document version with a new PDF upload."""
         # Verify ownership
-        document = db.query(Document).filter(Document.id == document_id).first()
+        query = db.query(Document).filter(Document.id == document_id)
+        if user_id is not None:
+            query = query.filter(Document.user_id == user_id)
+        document = query.first()
         if not document:
             raise ValueError("Document not found.")
 
@@ -160,9 +180,12 @@ class DocumentService:
         finally:
             staged_upload.path.unlink(missing_ok=True)
 
-    def delete(self, db: Session, document_id: uuid.UUID) -> None:
+    def delete(self, db: Session, document_id: uuid.UUID, user_id: uuid.UUID | None = None) -> None:
         """Delete document metadata and remove stored file."""
-        document = db.query(Document).filter(Document.id == document_id).first()
+        query = db.query(Document).filter(Document.id == document_id)
+        if user_id is not None:
+            query = query.filter(Document.user_id == user_id)
+        document = query.first()
         if not document:
             raise ValueError("Document not found.")
 
@@ -177,9 +200,12 @@ class DocumentService:
         db.commit()
         logger.info("Document deleted successfully from DB and storage. ID: %s", document_id)
 
-    def rename(self, db: Session, document_id: uuid.UUID, new_name: str) -> Document:
+    def rename(self, db: Session, document_id: uuid.UUID, new_name: str, user_id: uuid.UUID | None = None) -> Document:
         """Rename an existing document original filename."""
-        document = db.query(Document).filter(Document.id == document_id).first()
+        query = db.query(Document).filter(Document.id == document_id)
+        if user_id is not None:
+            query = query.filter(Document.user_id == user_id)
+        document = query.first()
         if not document:
             raise ValueError("Document not found.")
 

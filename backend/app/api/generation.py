@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
+from app.api.deps import get_current_user
 from app.core.config import get_settings
 from app.schemas.document import NotesGenerationRequest
 from app.services.gemini_service import GeminiService, GeminiServiceError
@@ -14,7 +15,7 @@ from app.services.generation_service import GenerationService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 def get_generation_service() -> GenerationService:
     """Dependency injection helper for GenerationService orchestrator."""

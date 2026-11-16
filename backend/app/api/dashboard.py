@@ -1,13 +1,16 @@
 """Dashboard statistics and overview API router."""
 
 from datetime import datetime, timezone as tz
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_optional_current_user
 from app.db.session import get_db_session
 from app.models.conversation import Conversation, Message
 from app.models.document import Document
+from app.models.user import User
 from app.schemas.dashboard import DashboardStatsResponse
 
 router = APIRouter(prefix="/dashboard")
@@ -25,24 +28,34 @@ def _ensure_tz_aware(dt):
 @router.get("/stats", response_model=DashboardStatsResponse)
 def get_dashboard_stats(
     x_session_id: str | None = Header(None, alias="X-Session-ID"),
+    current_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> dict:
     """Retrieve summarized workspace usage metrics and recent activity streams."""
-    doc_query = db.query(Document)
-    conv_query = db.query(Conversation)
-    msg_query = db.query(Message).join(Conversation)
+    if not current_user:
+        return {
+            "total_documents": 0,
+            "total_conversations": 0,
+            "total_ai_generations": 0,
+            "recent_conversations": [],
+            "recent_documents": [],
+            "recent_activities": [],
+        }
 
-    if x_session_id:
-        doc_query = doc_query.filter((Document.session_id == x_session_id) | (Document.session_id.is_(None)))
-        conv_query = conv_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
-        msg_query = msg_query.filter((Conversation.session_id == x_session_id) | (Conversation.session_id.is_(None)))
+    doc_query = db.query(Document).filter(Document.user_id == current_user.id)
+    conv_query = db.query(Conversation).filter(Conversation.user_id == current_user.id)
+    msg_query = (
+        db.query(Message)
+        .join(Conversation, Message.conversation_id == Conversation.id)
+        .filter(Conversation.user_id == current_user.id)
+    )
 
     total_docs = doc_query.count()
     total_convs = conv_query.count()
 
     total_ai = (
         msg_query
-        .filter(Message.role == "assistant")
+        .filter((Message.role == "assistant") | (Message.role == "model"))
         .count()
     )
 
