@@ -15,7 +15,7 @@
   --card-foreground: 240 7% 4%;
   --popover: 0 0% 100%;
   --popover-foreground: 240 7% 4%;
-  --primary: 74 90% 42%;          /* Accessible Darker Lime #82A900 for Light Mode */
+  --primary: 84 81% 23%;          /* High-Contrast Forest Olive #3F6212 (7.08:1 WCAG AAA on White) */
   --primary-foreground: 0 0% 100%;
   --secondary: 240 5% 95%;        /* #F1F1F3 */
   --secondary-foreground: 240 7% 8%;
@@ -34,6 +34,12 @@
   --brand-midnight: #0B0B0C;
   --brand-white: #FFFFFF;
   --brand-lime: #C6F432;
+
+  /* Emil Kowalski Custom Interaction & Motion Easings */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .dark {
@@ -114,7 +120,7 @@ body,
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
   border-radius: 9999px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s var(--ease-out);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -128,4 +134,30 @@ body,
 
 .lime-border-glow {
   box-shadow: 0 0 0 1px #C6F432, 0 0 16px -4px rgba(198, 244, 50, 0.4);
+}
+
+/* 3D Flashcard Perspective Utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+/* Tactile Press Micro-interaction (Emil Kowalski) */
+.press-tactile {
+  transition: transform 120ms var(--ease-out);
+}
+.press-tactile:active {
+  transform: scale(0.97);
 }
