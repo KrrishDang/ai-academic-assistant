@@ -52,8 +52,8 @@ def get_study_service() -> NotebookStudyService:
 )
 async def generate_notebook_study_guide(
     notebook_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
     request: StudyGuideGenerateRequest = StudyGuideGenerateRequest(),
-    current_user: Annotated[User, Depends(get_current_user)] = None,
     service: NotebookStudyService = Depends(get_study_service),
     db: Session = Depends(get_db_session),
 ) -> StudyMaterialResponse:
@@ -91,8 +91,8 @@ async def generate_notebook_study_guide(
 )
 async def generate_notebook_flashcards(
     notebook_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
     request: FlashcardsGenerateRequest = FlashcardsGenerateRequest(),
-    current_user: Annotated[User, Depends(get_current_user)] = None,
     service: NotebookStudyService = Depends(get_study_service),
     db: Session = Depends(get_db_session),
 ) -> StudyMaterialResponse:
@@ -131,7 +131,7 @@ async def generate_notebook_flashcards(
 async def generate_notebook_exam_paper(
     notebook_id: uuid.UUID,
     request: ExamPaperGenerateRequest,
-    current_user: Annotated[User, Depends(get_current_user)] = None,
+    current_user: Annotated[User, Depends(get_current_user)],
     service: NotebookStudyService = Depends(get_study_service),
     db: Session = Depends(get_db_session),
 ) -> StudyMaterialResponse:

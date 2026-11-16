@@ -1,5 +1,6 @@
 """File storage implementations for uploaded documents."""
 
+import mimetypes
 from pathlib import Path
 from typing import Protocol
 
@@ -48,11 +49,12 @@ class S3DocumentStorage:
         self._client = boto3.client("s3", region_name=region)
 
     def save(self, source_path: Path, storage_key: str) -> None:
+        content_type, _ = mimetypes.guess_type(str(source_path))
         self._client.upload_file(
             str(source_path),
             self._bucket,
             storage_key,
-            ExtraArgs={"ContentType": "application/pdf"},
+            ExtraArgs={"ContentType": content_type or "application/octet-stream"},
         )
 
     def delete(self, storage_key: str) -> None:

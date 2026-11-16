@@ -157,9 +157,13 @@ def rename_conversation(
     current_user: Annotated[User | None, Depends(get_optional_current_user)] = None,
     db: Session = Depends(get_db_session),
 ) -> Conversation:
-    """Rename a conversation's title."""
+    """Rename a conversation's title and keep underlying notebook title consistent."""
     conversation = _get_conversation_or_404(id, current_user, db)
     conversation.title = request.title
+    if conversation.notebook_id:
+        notebook = db.get(Notebook, conversation.notebook_id)
+        if notebook:
+            notebook.title = request.title
     db.commit()
     db.refresh(conversation)
     return conversation
@@ -210,6 +214,20 @@ async def chat_in_conversation(
         content=request.message,
     )
     db.add(user_msg)
+
+    # Auto-generate a useful title from initial prompt if conversation currently has default title
+    if conversation.title in ("General Chat", "Main Discussion", "Course Discussion", "Academic Discussion", "New Chat"):
+        cleaned_prompt = request.message.strip().split("\n")[0]
+        if len(cleaned_prompt) > 45:
+            prefix = cleaned_prompt[:42].rsplit(" ", 1)[0]
+            cleaned_prompt = (prefix if prefix else cleaned_prompt[:42]) + "..."
+        if cleaned_prompt:
+            conversation.title = cleaned_prompt
+            if conversation.notebook_id:
+                notebook = db.get(Notebook, conversation.notebook_id)
+                if notebook and notebook.title in ("Academic Discussion", "Course Discussion", "New Chat"):
+                    notebook.title = cleaned_prompt
+
     db.commit()
 
     async def event_stream():

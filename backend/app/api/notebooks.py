@@ -162,6 +162,12 @@ def update_notebook(
 
     if payload.title is not None:
         notebook.title = payload.title
+        # Keep underlying initial/main conversation title consistent
+        initial_convs = db.scalars(
+            select(Conversation).where(Conversation.notebook_id == notebook_id)
+        ).all()
+        if len(initial_convs) == 1 and initial_convs[0].title in ("Main Discussion", "Academic Discussion", "Course Discussion", "General Chat"):
+            initial_convs[0].title = payload.title
     if payload.description is not None:
         notebook.description = payload.description
 
@@ -229,9 +235,9 @@ def get_notebook_conversations(
 @router.post("/{notebook_id}/sources", response_model=SourceResponse, status_code=status.HTTP_201_CREATED)
 async def upload_notebook_source(
     notebook_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
     file: UploadFile = File(...),
-    current_user: Annotated[User, Depends(get_current_user)] = None,
-    db: Annotated[Session, Depends(get_db_session)] = None,
+    db: Session = Depends(get_db_session),
 ) -> SourceResponse:
     """Upload and ingest a document source into an owned notebook."""
     notebook = db.scalar(
