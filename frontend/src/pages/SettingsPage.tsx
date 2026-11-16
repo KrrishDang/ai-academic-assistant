@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Cpu, Thermometer, Check, Sparkles, ShieldCheck, Copy, Database, RefreshCw } from "lucide-react";
+import { Cpu, Thermometer, Check, Sparkles, ShieldCheck, Copy, Database, RefreshCw, Sun, Moon, Laptop } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getAnonymousSessionId } from "@/lib/api";
 import { clearAllLocalData } from "@/lib/db";
+import { useTheme } from "@/features/theme/ThemeContext";
 
 export function SettingsPage() {
   const [model, setModel] = useState("gemini-2.5-flash");
@@ -11,6 +13,8 @@ export function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedSession, setCopiedSession] = useState(false);
   const [sessionId, setSessionId] = useState("");
+
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
     setSessionId(getAnonymousSessionId());
@@ -56,12 +60,12 @@ export function SettingsPage() {
     <div className="max-w-2xl mx-auto space-y-6 animate-fade-in pb-12">
       {/* Header */}
       <header className="space-y-1">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[#b4befe]">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
           Preferences & System
         </p>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Settings</h1>
         <p className="text-muted-foreground text-xs font-medium">
-          Configure AI model parameters, session credentials, and local cache.
+          Configure AI model parameters, appearance theme, session credentials, and local storage.
         </p>
       </header>
 
@@ -73,28 +77,100 @@ export function SettingsPage() {
         </div>
       )}
 
-      {/* ── AI Model Configuration ───────────────────────────────────── */}
-      <Card className="border border-border/60 bg-card p-6 space-y-6">
+      {/* ── Theme Appearance ─────────────────────────────────────────── */}
+      <Card className="border border-border/80 bg-card p-5 space-y-4 shadow-xs">
         <div>
-          <h3 className="text-xs font-extrabold text-foreground uppercase tracking-widest flex items-center gap-2">
-            <Cpu size={16} className="text-primary" />
-            <span>AI Engine & Parameters</span>
+          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+            <Sparkles size={15} className="text-primary" />
+            <span>Appearance & Theme</span>
           </h3>
-          <p className="text-[11px] text-muted-foreground font-medium mt-1">
-            Tune response length, creativity, and model weights for your study session.
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Choose your preferred interface theme. Default is high-contrast Midnight Black.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setTheme("dark")}
+            className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
+              theme === "dark"
+                ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                : "border-border/80 bg-card hover:border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <Moon size={16} className={theme === "dark" ? "text-primary" : "text-muted-foreground"} />
+              {theme === "dark" && <Badge variant="lime" className="text-[9px] px-1 py-0">Active</Badge>}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Dark Mode</p>
+              <p className="text-[10px] text-muted-foreground">Midnight Black & Lime</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTheme("light")}
+            className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
+              theme === "light"
+                ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                : "border-border/80 bg-card hover:border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <Sun size={16} className={theme === "light" ? "text-primary" : "text-muted-foreground"} />
+              {theme === "light" && <Badge variant="lime" className="text-[9px] px-1 py-0">Active</Badge>}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">Light Mode</p>
+              <p className="text-[10px] text-muted-foreground">Crisp Clean Slate</p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTheme("system")}
+            className={`p-3 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer ${
+              theme === "system"
+                ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                : "border-border/80 bg-card hover:border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <Laptop size={16} className={theme === "system" ? "text-primary" : "text-muted-foreground"} />
+              {theme === "system" && <Badge variant="lime" className="text-[9px] px-1 py-0">Active</Badge>}
+            </div>
+            <div>
+              <p className="text-xs font-bold text-foreground">System Sync</p>
+              <p className="text-[10px] text-muted-foreground">Follow OS settings</p>
+            </div>
+          </button>
+        </div>
+      </Card>
+
+      {/* ── AI Model Configuration ───────────────────────────────────── */}
+      <Card className="border border-border/80 bg-card p-5 space-y-5 shadow-xs">
+        <div>
+          <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+            <Cpu size={15} className="text-primary" />
+            <span>AI Model & Parameters</span>
+          </h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Tune response length, creativity, and model parameters for your study sessions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {/* Model selector */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-foreground">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
               LLM Architecture
             </label>
             <select
               value={model}
               onChange={handleModelChange}
-              className="flex h-9 w-full rounded-lg border border-border/60 bg-card px-3 py-1.5 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 text-foreground"
+              className="flex h-9 w-full rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 text-foreground"
             >
               <option value="gemini-2.5-flash">
                 gemini-2.5-flash (Production High Speed)
@@ -106,13 +182,13 @@ export function SettingsPage() {
           </div>
 
           {/* Temperature */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                <Thermometer size={14} className="text-muted-foreground" />
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Thermometer size={13} className="text-muted-foreground" />
                 <span>Creativity (Temperature)</span>
               </label>
-              <span className="text-xs font-extrabold text-primary">
+              <span className="text-xs font-bold text-primary">
                 {temperature.toFixed(1)}
               </span>
             </div>
@@ -125,29 +201,30 @@ export function SettingsPage() {
               onChange={handleTempChange}
               className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <p className="text-[10px] text-muted-foreground font-medium">
-              0.0 = Precise & Factual | 1.0+ = Creative & Detailed
+            <p className="text-[10px] text-muted-foreground">
+              0.0 = Factually Grounded | 1.0+ = Creative Explanations
             </p>
           </div>
         </div>
       </Card>
 
       {/* ── Anonymous Visitor Session ────────────────────────────────── */}
-      <Card className="border border-border/60 bg-card p-6 space-y-4">
-        <h3 className="text-xs font-extrabold text-foreground uppercase tracking-widest flex items-center gap-2">
-          <ShieldCheck size={16} className="text-primary" />
+      <Card className="border border-border/80 bg-card p-5 space-y-3.5 shadow-xs">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+          <ShieldCheck size={15} className="text-primary" />
           <span>Anonymous Visitor Session</span>
         </h3>
-        <p className="text-[11px] text-muted-foreground font-medium">
-          Your documents and conversation history are isolated using this anonymous session identifier.
+        <p className="text-[11px] text-muted-foreground">
+          Your documents and conversation history are isolated using this unique session token.
         </p>
 
-        <div className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-muted/20 text-xs font-mono">
+        <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/20 text-xs font-mono">
           <span className="truncate max-w-[280px] text-muted-foreground">{sessionId}</span>
           <Button
             onClick={handleCopySession}
             variant="ghost"
-            className="h-7 px-3 text-[10px] font-bold gap-1 text-primary"
+            size="sm"
+            className="h-7 px-2.5 text-[11px] font-bold gap-1 text-primary hover:text-primary hover:bg-primary/10"
           >
             {copiedSession ? <Check size={12} /> : <Copy size={12} />}
             <span>{copiedSession ? "Copied" : "Copy ID"}</span>
@@ -155,33 +232,34 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      {/* ── System Status & Storage ───────────────────────────────────── */}
-      <Card className="border border-border/60 bg-card p-6 space-y-4">
-        <h3 className="text-xs font-extrabold text-foreground uppercase tracking-widest flex items-center gap-2">
-          <Database size={16} className="text-primary" />
-          <span>Storage & System Theme</span>
+      {/* ── System Storage & Cache ───────────────────────────────────── */}
+      <Card className="border border-border/80 bg-card p-5 space-y-4 shadow-xs">
+        <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+          <Database size={15} className="text-primary" />
+          <span>Storage & Cache Management</span>
         </h3>
 
-        <div className="flex items-center justify-between p-4 rounded-xl border border-border/60 bg-muted/20 text-xs">
+        <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/20 text-xs">
           <div className="flex items-center gap-3">
-            <Sparkles size={18} className="text-primary shrink-0" />
+            <Sparkles size={16} className="text-primary shrink-0" />
             <div>
-              <p className="font-bold text-foreground">Catppuccin Mocha Palette</p>
-              <p className="text-[10px] text-muted-foreground">Official academic dark theme</p>
+              <p className="font-bold text-foreground">AI Academic Assistant Design System</p>
+              <p className="text-[10px] text-muted-foreground">Midnight Black, Electric Lime, and Pure White</p>
             </div>
           </div>
-          <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <Badge variant="success" className="text-[9px] px-2 py-0.5">
             Active
-          </span>
+          </Badge>
         </div>
 
-        <div className="pt-2">
+        <div className="pt-1">
           <Button
             onClick={handleClearCache}
             variant="outline"
-            className="h-9 px-4 text-xs font-bold gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+            size="sm"
+            className="h-8 px-3 text-xs font-semibold gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
           >
-            <RefreshCw size={13} />
+            <RefreshCw size={12} />
             <span>Clear Local IndexedDB Cache</span>
           </Button>
         </div>

@@ -53,10 +53,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-background selection:bg-[#C6F432]/30">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-12 bg-background selection:bg-primary/30">
       {/* Background Decorative Glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[350px] bg-[#C6F432]/5 blur-[120px] rounded-full" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[350px] bg-primary/5 blur-[120px] rounded-full" />
       </div>
 
       <div className="w-full max-w-md relative z-10 space-y-6">
@@ -65,15 +65,13 @@ export function LoginPage() {
           <Link
             to="/"
             className="inline-flex items-center gap-2.5 font-extrabold text-xl tracking-tight text-foreground hover:opacity-90 transition-opacity"
+            aria-label="AI Academic Assistant Home"
           >
-            <div className="h-10 w-10 rounded-xl bg-[#0B0B0C] border border-[#C6F432]/40 flex items-center justify-center text-[#C6F432] shadow-sm shadow-[#C6F432]/20">
-              <Sparkles size={20} className="text-[#C6F432]" aria-hidden="true" />
+            <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center text-primary shadow-sm shadow-primary/20">
+              <Sparkles size={20} className="text-primary" aria-hidden="true" />
             </div>
             <span>
-              Study<span className="text-[#C6F432]">Hub</span>{" "}
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#C6F432]/15 text-[#C6F432] border border-[#C6F432]/30 font-bold ml-1">
-                V2
-              </span>
+              AI Academic <span className="text-primary font-black">Assistant</span>
             </span>
           </Link>
           <p className="text-xs text-muted-foreground font-medium">
@@ -146,7 +144,7 @@ export function LoginPage() {
                 Don't have an account?{" "}
                 <Link
                   to="/register"
-                  className="font-bold text-foreground hover:text-[#C6F432] underline-offset-4 hover:underline transition-colors"
+                  className="font-bold text-foreground hover:text-primary underline-offset-4 hover:underline transition-colors"
                 >
                   Create one now
                 </Link>
@@ -157,7 +155,7 @@ export function LoginPage() {
 
         {/* Footer info */}
         <div className="text-center text-[11px] text-muted-foreground">
-          StudyHub V2 • Protected by JWT Token Authentication
+          AI Academic Assistant
         </div>
       </div>
     </div>

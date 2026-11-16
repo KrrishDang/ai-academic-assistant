@@ -297,7 +297,7 @@ export function StudyStudioPanel({
       {/* ─── Studio Header Bar ────────────────────────────────────────────── */}
       <div className="p-3.5 border-b border-border/60 shrink-0 flex items-center justify-between bg-card/40 backdrop-blur-sm">
         <div className="flex items-center gap-2 truncate">
-          <GraduationCap className="w-4 h-4 text-[#C6F432] shrink-0" />
+          <GraduationCap className="w-4 h-4 text-primary shrink-0" />
           <div>
             <h2 className="text-xs font-bold text-foreground uppercase tracking-wider truncate">
               {activeMaterial ? activeMaterial.title : "Study Studio"}
@@ -372,7 +372,7 @@ export function StudyStudioPanel({
             <div className="p-3 rounded-xl border border-border/60 bg-card/60 space-y-2">
               <div className="flex items-center justify-between text-[11px]">
                 <span className="font-bold text-foreground flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#C6F432]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
                   Grounding Sources ({activeMaterial.source_references?.length || 0})
                 </span>
                 <Badge
@@ -503,7 +503,7 @@ export function StudyStudioPanel({
                         onClick={() => setIsFlipped(!isFlipped)}
                         className={`min-h-[220px] p-6 rounded-2xl border cursor-pointer select-none transition-all duration-300 flex flex-col justify-between shadow-sm relative group ${
                           isFlipped
-                            ? "bg-[#C6F432]/10 border-[#C6F432]/40"
+                            ? "bg-primary/10 border-primary/40"
                             : "bg-card border-border/80 hover:border-primary/50"
                         }`}
                         title="Click to flip card"
@@ -546,7 +546,7 @@ export function StudyStudioPanel({
                           <span className="truncate max-w-[200px]">
                             {currentCard.source_reference ? `Ref: ${currentCard.source_reference}` : ""}
                           </span>
-                          <span className="flex items-center gap-1 text-[#C6F432] font-semibold">
+                          <span className="flex items-center gap-1 text-primary font-semibold">
                             <RotateCw className="w-3 h-3" />
                             {isFlipped ? "Click to see question" : "Click to flip answer"}
                           </span>
@@ -645,7 +645,7 @@ export function StudyStudioPanel({
                       <div className="space-y-1 pt-1 text-[11px] text-muted-foreground border-t border-border/40">
                         {instructions.map((inst, iIdx) => (
                           <p key={iIdx} className="flex items-start gap-1.5">
-                            <span className="font-bold text-[#C6F432]">&bull;</span>
+                            <span className="font-bold text-primary">&bull;</span>
                             <span>{inst}</span>
                           </p>
                         ))}
@@ -699,7 +699,7 @@ export function StudyStudioPanel({
                                     [q.question_number]: !isExpanded,
                                   }))
                                 }
-                                className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#C6F432] hover:underline"
+                                className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:underline"
                               >
                                 {isExpanded ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                                 <span>{isExpanded ? "Hide Model Solution" : "Show Model Solution & Scoring Key"}</span>
@@ -780,11 +780,11 @@ export function StudyStudioPanel({
                     setGuideFocus("");
                     setGuideModalOpen(true);
                   }}
-                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-[#C6F432]/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
-                      <BookMarked className="w-4 h-4 text-[#C6F432]" />
+                      <BookMarked className="w-4 h-4 text-primary" />
                       <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                         Study Notes
                       </span>
@@ -793,7 +793,7 @@ export function StudyStudioPanel({
                       Synthesizes all uploaded lecture notes and slide decks into organized study guide chapters.
                     </p>
                   </div>
-                  <Plus className="w-4 h-4 text-[#C6F432] shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
+                  <Plus className="w-4 h-4 text-primary shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
                 </button>
 
                 {/* 2. Flashcards Button Card */}
@@ -807,11 +807,11 @@ export function StudyStudioPanel({
                     setCardsDifficulty("Mixed");
                     setFlashcardsModalOpen(true);
                   }}
-                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-[#C6F432]/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
-                      <Layers className="w-4 h-4 text-[#C6F432]" />
+                      <Layers className="w-4 h-4 text-primary" />
                       <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                         Active Flashcards
                       </span>
@@ -820,7 +820,7 @@ export function StudyStudioPanel({
                       Creates interactive reveal/flip question cards for active recall and concept drilling.
                     </p>
                   </div>
-                  <Plus className="w-4 h-4 text-[#C6F432] shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
+                  <Plus className="w-4 h-4 text-primary shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
                 </button>
 
                 {/* 3. Exam Paper Button Card */}
@@ -836,11 +836,11 @@ export function StudyStudioPanel({
                     setExamAnswerKey(true);
                     setExamModalOpen(true);
                   }}
-                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-[#C6F432]/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                  className="p-3.5 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 text-left transition-all duration-200 group flex items-start justify-between disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                 >
                   <div className="space-y-1 flex-1 pr-2">
                     <div className="flex items-center gap-2">
-                      <FileQuestion className="w-4 h-4 text-[#C6F432]" />
+                      <FileQuestion className="w-4 h-4 text-primary" />
                       <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
                         Exam Simulator
                       </span>
@@ -849,7 +849,7 @@ export function StudyStudioPanel({
                       Generates structured university exam papers with 5-mark and 10-mark questions and scoring keys.
                     </p>
                   </div>
-                  <Plus className="w-4 h-4 text-[#C6F432] shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
+                  <Plus className="w-4 h-4 text-primary shrink-0 mt-0.5 opacity-60 group-hover:opacity-100" />
                 </button>
               </div>
             </div>
@@ -864,7 +864,7 @@ export function StudyStudioPanel({
 
               {loadingMaterials && (
                 <div className="p-6 text-center text-muted-foreground space-y-2">
-                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-[#C6F432]" />
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
                   <p className="text-[11px]">Loading saved study artifacts...</p>
                 </div>
               )}
@@ -901,7 +901,7 @@ export function StudyStudioPanel({
                         className="p-3 rounded-xl border border-border/80 bg-card/60 hover:border-primary/50 hover:bg-card cursor-pointer transition-all duration-150 flex items-center justify-between group shadow-xs"
                       >
                         <div className="flex items-center gap-2.5 truncate flex-1 pr-2">
-                          <div className="p-2 rounded-lg bg-muted text-[#C6F432] shrink-0">
+                          <div className="p-2 rounded-lg bg-muted text-primary shrink-0">
                             {isGuide ? (
                               <BookMarked className="w-3.5 h-3.5" />
                             ) : isCards ? (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
   BookOpen,
@@ -23,6 +23,8 @@ import {
   Loader2,
   X,
   ExternalLink,
+  Pencil,
+  Check,
 } from "lucide-react";
 
 import {
@@ -33,6 +35,7 @@ import {
   createNotebookConversation,
   listNotebookConversations,
   deleteConversation,
+  updateNotebook,
   getConversationMessages,
   chatInConversation,
   type NotebookDetailResponse,
@@ -48,10 +51,17 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
 import { StudyStudioPanel } from "./StudyStudioPanel";
+import {
+  SourcesRail,
+  SourceViewerModal,
+  DeleteSourceDialog,
+} from "@/features/sources/components";
 
 export function NotebookWorkspacePage() {
   const { id: notebookId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const conversationParam = searchParams.get("conversation") || searchParams.get("c");
 
   // Notebook Detail State
   const [notebook, setNotebook] = useState<NotebookDetailResponse | null>(null);
@@ -63,12 +73,12 @@ export function NotebookWorkspacePage() {
 
   // Sources State
   const [sources, setSources] = useState<SourceResponse[]>([]);
+  const [sourceToView, setSourceToView] = useState<SourceResponse | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sourceToDelete, setSourceToDelete] = useState<SourceResponse | null>(null);
   const [deletingSource, setDeletingSource] = useState(false);
   const [highlightedSourceId, setHighlightedSourceId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Conversations State
   const [conversations, setConversations] = useState<ConversationResponse[]>([]);
@@ -91,6 +101,39 @@ export function NotebookWorkspacePage() {
   // Citation Detail Modal State
   const [selectedCitation, setSelectedCitation] = useState<CitationItem | null>(null);
 
+  // Chat/Notebook Rename State
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitleValue, setEditTitleValue] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
+
+  const handleStartRename = () => {
+    if (!notebook) return;
+    setEditTitleValue(notebook.title);
+    setIsEditingTitle(true);
+  };
+
+  const handleSaveRename = async () => {
+    if (!notebookId || !editTitleValue.trim()) {
+      setIsEditingTitle(false);
+      return;
+    }
+    setSavingTitle(true);
+    try {
+      const updated = await updateNotebook(notebookId, { title: editTitleValue.trim() });
+      setNotebook((prev) => (prev ? { ...prev, title: updated.title } : null));
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversationId ? { ...c, title: updated.title } : c
+        )
+      );
+      setIsEditingTitle(false);
+    } catch {
+      setChatError("Failed to rename chat workspace.");
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
   // Auto-scroll to bottom of message list
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -110,9 +153,12 @@ export function NotebookWorkspacePage() {
       setSources(data.sources);
       setConversations(data.conversations);
 
-      // Select active conversation if none selected
-      if (!activeConversationId && data.conversations.length > 0) {
+      // Select active conversation if none selected or if conversationParam is present in data.conversations
+      if (conversationParam && data.conversations.some((c) => c.id === conversationParam)) {
+        setActiveConversationId(conversationParam);
+      } else if (!activeConversationId && data.conversations.length > 0) {
         setActiveConversationId(data.conversations[0].id);
+        setSearchParams({ conversation: data.conversations[0].id }, { replace: true });
       }
     } catch (err: any) {
       if (!isPolling) {
@@ -126,6 +172,15 @@ export function NotebookWorkspacePage() {
   useEffect(() => {
     loadNotebookData();
   }, [notebookId]);
+
+  // Synchronize active conversation with browser back/forward and URL changes
+  useEffect(() => {
+    if (conversationParam && conversationParam !== activeConversationId) {
+      if (conversations.some((c) => c.id === conversationParam)) {
+        setActiveConversationId(conversationParam);
+      }
+    }
+  }, [conversationParam, conversations, activeConversationId]);
 
   // Polling for pending sources
   useEffect(() => {
@@ -204,7 +259,6 @@ export function NotebookWorkspacePage() {
       });
       setSources((prev) => [newSource, ...prev]);
       setUploadProgress(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err: any) {
       setUploadError(err?.message || "Failed to upload document source.");
       setUploadProgress(null);
@@ -226,6 +280,13 @@ export function NotebookWorkspacePage() {
     }
   };
 
+  // Handle Select Conversation
+  const handleSelectConversation = (id: string) => {
+    setActiveConversationId(id);
+    setSearchParams({ conversation: id }, { replace: true });
+    setActiveTab("chat");
+  };
+
   // Handle Create Conversation
   const handleCreateChat = async () => {
     if (!notebookId || creatingChat) return;
@@ -237,6 +298,7 @@ export function NotebookWorkspacePage() {
       );
       setConversations((prev) => [newChat, ...prev]);
       setActiveConversationId(newChat.id);
+      setSearchParams({ conversation: newChat.id }, { replace: true });
       setMessages([]);
       setActiveTab("chat"); // Switch to chat tab on mobile
     } catch (err: any) {
@@ -255,7 +317,13 @@ export function NotebookWorkspacePage() {
       const remaining = conversations.filter((c) => c.id !== chatToDelete.id);
       setConversations(remaining);
       if (activeConversationId === chatToDelete.id) {
-        setActiveConversationId(remaining.length > 0 ? remaining[0].id : null);
+        const nextId = remaining.length > 0 ? remaining[0].id : null;
+        setActiveConversationId(nextId);
+        if (nextId) {
+          setSearchParams({ conversation: nextId }, { replace: true });
+        } else {
+          setSearchParams({}, { replace: true });
+        }
       }
       setChatToDelete(null);
     } catch (err: any) {
@@ -280,6 +348,14 @@ export function NotebookWorkspacePage() {
         setConversations((prev) => [newChat, ...prev]);
         setActiveConversationId(newChat.id);
         currentConvId = newChat.id;
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("conversation", newChat.id);
+            return next;
+          },
+          { replace: true }
+        );
       } catch (err: any) {
         setChatError("Failed to initiate chat conversation.");
         return;
@@ -346,6 +422,7 @@ export function NotebookWorkspacePage() {
     } catch (err: any) {
       if (err.name !== "AbortError") {
         setChatError(err?.message || "Chat request failed.");
+        setInputPrompt((prev) => prev || prompt);
       }
     } finally {
       setIsGenerating(false);
@@ -395,7 +472,7 @@ export function NotebookWorkspacePage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[60vh] space-y-3 flex-col">
-        <Loader2 className="w-8 h-8 animate-spin text-[#C6F432]" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <p className="text-xs text-muted-foreground font-medium">
           Loading notebook workspace...
         </p>
@@ -426,7 +503,7 @@ export function NotebookWorkspacePage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden bg-background">
+    <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* ─── Top Workspace Bar ────────────────────────────────────────────── */}
       <header className="h-14 border-b border-border/80 px-4 flex items-center justify-between shrink-0 bg-card/40 backdrop-blur-md z-10">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -439,14 +516,61 @@ export function NotebookWorkspacePage() {
           </Link>
 
           <div className="flex items-center gap-2 overflow-hidden">
-            <span className="p-1.5 rounded-lg bg-[#C6F432]/10 border border-[#C6F432]/20 text-[#C6F432] shrink-0">
-              <BookOpen className="w-4 h-4 text-[#C6F432]" />
+            <span className="p-1.5 rounded-lg bg-primary/10 border border-primary/20 text-primary shrink-0">
+              <BookOpen className="w-4 h-4 text-primary" />
             </span>
-            <div className="truncate">
-              <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground truncate">
-                {notebook.title}
-              </h1>
-              {notebook.description && (
+            <div className="truncate flex items-center gap-1.5">
+              {isEditingTitle ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={editTitleValue}
+                    onChange={(e) => setEditTitleValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveRename();
+                      if (e.key === "Escape") setIsEditingTitle(false);
+                    }}
+                    autoFocus
+                    disabled={savingTitle}
+                    className="text-xs sm:text-sm font-bold bg-muted/60 border border-primary/40 rounded px-2 py-0.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveRename}
+                    disabled={savingTitle}
+                    aria-label="Save chat title"
+                    className="p-1 rounded text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingTitle(false)}
+                    aria-label="Cancel renaming"
+                    className="p-1 rounded text-muted-foreground hover:bg-muted transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 group cursor-pointer" onClick={handleStartRename} title="Click to rename chat workspace">
+                  <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground truncate">
+                    {notebook.title}
+                  </h1>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartRename();
+                    }}
+                    aria-label="Rename chat workspace"
+                    className="opacity-60 hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-foreground transition-opacity"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+              {notebook.description && !isEditingTitle && (
                 <p className="text-[10px] text-muted-foreground truncate hidden sm:block">
                   {notebook.description}
                 </p>
@@ -507,213 +631,24 @@ export function NotebookWorkspacePage() {
 
       {/* ─── 3-Column Workspace Grid ──────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
-        {/* ─── LEFT PANEL: Sources & Conversations (320px) ────────────────── */}
-        <aside
-          className={`w-full lg:w-80 shrink-0 border-r border-border/80 flex flex-col bg-card/20 overflow-hidden ${
-            activeTab !== "sources" ? "hidden lg:flex" : "flex"
-          }`}
-        >
-          {/* Sources Section */}
-          <div className="flex-1 flex flex-col min-h-0 border-b border-border/60">
-            {/* Sources Header */}
-            <div className="p-3.5 pb-2 flex items-center justify-between border-b border-border/40 shrink-0">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#C6F432]" />
-                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  Sources ({sources.length})
-                </h2>
-              </div>
-
-              {/* Upload Trigger Button */}
-              <label className="cursor-pointer">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.docx,.pptx,.txt"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files)}
-                />
-                <span className="inline-flex items-center justify-center gap-1 text-[11px] font-bold text-[#0B0B0C] bg-[#C6F432] hover:bg-[#b7e22a] px-2.5 py-1 rounded-lg transition-colors shadow-xs">
-                  <Upload className="w-3 h-3" />
-                  Add Source
-                </span>
-              </label>
-            </div>
-
-            {/* Upload Progress Bar */}
-            {uploadProgress !== null && (
-              <div className="p-3 bg-muted/40 border-b border-border/40 space-y-1.5 shrink-0">
-                <div className="flex justify-between text-[10px] font-semibold text-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                    Uploading document...
-                  </span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="w-full bg-border/60 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="bg-[#C6F432] h-full transition-all duration-200"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Upload Error Banner */}
-            {uploadError && (
-              <div className="p-2.5 bg-destructive/10 border-b border-destructive/20 text-destructive text-[11px] font-medium flex items-center justify-between gap-2 shrink-0">
-                <span className="truncate">{uploadError}</span>
-                <button
-                  type="button"
-                  onClick={() => setUploadError(null)}
-                  className="p-1 hover:text-foreground"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </div>
-            )}
-
-            {/* Sources List */}
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
-              {sources.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground space-y-2 my-auto">
-                  <Upload className="w-6 h-6 mx-auto text-muted-foreground/60" />
-                  <p className="text-xs font-medium">No sources added yet</p>
-                  <p className="text-[10px] text-muted-foreground/80 leading-relaxed">
-                    Upload course notes, textbook PDFs, slides, or documents (max 20 MB) to ground AI responses.
-                  </p>
-                </div>
-              ) : (
-                sources.map((src) => {
-                  const isHighlighted = highlightedSourceId === src.id;
-                  return (
-                    <div
-                      key={src.id}
-                      className={`p-3 rounded-xl border transition-all duration-200 group relative ${
-                        isHighlighted
-                          ? "border-[#C6F432] bg-[#C6F432]/10 ring-2 ring-[#C6F432]/30"
-                          : "border-border/60 bg-card/60 hover:border-border hover:bg-card"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="truncate flex-1">
-                          <p className="text-xs font-bold text-foreground truncate">
-                            {src.display_title}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                            <span>{formatBytes(src.file_size_bytes)}</span>
-                            <span>&bull;</span>
-                            <span className="uppercase text-[9px] font-bold">
-                              {src.source_type}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Delete Source Action */}
-                        <button
-                          type="button"
-                          onClick={() => setSourceToDelete(src)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all shrink-0"
-                          title="Delete source"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Status Indicator */}
-                      <div className="mt-2 flex items-center justify-between text-[10px]">
-                        {src.processing_status === "completed" && (
-                          <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold">
-                            <CheckCircle2 className="w-3 h-3" />
-                            Ready for grounding
-                          </span>
-                        )}
-                        {src.processing_status === "pending" && (
-                          <span className="inline-flex items-center gap-1 text-amber-500 font-semibold animate-pulse">
-                            <Clock className="w-3 h-3" />
-                            Extracting text...
-                          </span>
-                        )}
-                        {src.processing_status === "failed" && (
-                          <span className="inline-flex items-center gap-1 text-destructive font-semibold" title={src.error_message || undefined}>
-                            <AlertCircle className="w-3 h-3" />
-                            Processing failed
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Conversations Section */}
-          <div className="h-60 shrink-0 flex flex-col bg-muted/20">
-            <div className="p-3 pb-2 flex items-center justify-between border-b border-border/40 shrink-0">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[#C6F432]" />
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-                  Chats ({conversations.length})
-                </h3>
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCreateChat}
-                isLoading={creatingChat}
-                className="h-7 px-2 text-[11px] font-bold"
-              >
-                <Plus className="w-3.5 h-3.5 mr-1" />
-                New Chat
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
-              {conversations.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground text-[11px]">
-                  No chats created yet. Click "+ New Chat" to begin.
-                </div>
-              ) : (
-                conversations.map((conv) => {
-                  const isActive = conv.id === activeConversationId;
-                  return (
-                    <div
-                      key={conv.id}
-                      onClick={() => {
-                        setActiveConversationId(conv.id);
-                        setActiveTab("chat");
-                      }}
-                      className={`px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all duration-150 group ${
-                        isActive
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
-                          : "text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <span className="truncate flex-1 mr-2">{conv.title}</span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setChatToDelete(conv);
-                        }}
-                        className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${
-                          isActive
-                            ? "hover:bg-primary-foreground/20 text-primary-foreground"
-                            : "hover:bg-destructive/10 text-destructive"
-                        }`}
-                        title="Delete chat"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </aside>
+        {/* ─── LEFT PANEL: Sources Rail & Conversations (320px) ────────────────── */}
+        <SourcesRail
+          sources={sources}
+          highlightedSourceId={highlightedSourceId}
+          uploadProgress={uploadProgress}
+          uploadError={uploadError}
+          onDismissUploadError={() => setUploadError(null)}
+          onUploadFile={handleFileUpload}
+          onViewSource={(src) => setSourceToView(src)}
+          onDeleteSource={(src) => setSourceToDelete(src)}
+          conversations={conversations}
+          activeConversationId={activeConversationId}
+          onSelectConversation={handleSelectConversation}
+          onCreateConversation={handleCreateChat}
+          onDeleteConversation={(conv) => setChatToDelete(conv)}
+          isCreatingChat={creatingChat}
+          className={activeTab !== "sources" ? "hidden lg:flex" : "flex"}
+        />
 
         {/* ─── CENTER PANEL: Grounded AI Chat (Flex-1) ────────────────────── */}
         <main
@@ -724,7 +659,7 @@ export function NotebookWorkspacePage() {
           {/* Active Chat Header */}
           <div className="h-12 border-b border-border/60 px-4 flex items-center justify-between shrink-0 bg-card/20">
             <div className="flex items-center gap-2 truncate">
-              <Sparkles className="w-4 h-4 text-[#C6F432] shrink-0" />
+              <Sparkles className="w-4 h-4 text-primary shrink-0" />
               <span className="text-xs font-bold text-foreground truncate">
                 {conversations.find((c) => c.id === activeConversationId)?.title || "Active Discussion"}
               </span>
@@ -744,15 +679,15 @@ export function NotebookWorkspacePage() {
           <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
             {loadingMessages && (
               <div className="flex items-center justify-center h-48 space-x-2">
-                <Loader2 className="w-5 h-5 animate-spin text-[#C6F432]" />
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 <span className="text-xs text-muted-foreground">Loading chat messages...</span>
               </div>
             )}
 
             {!loadingMessages && messages.length === 0 && !streamingText && (
               <div className="max-w-md mx-auto text-center py-12 space-y-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#C6F432]/10 border border-[#C6F432]/20 text-[#C6F432] flex items-center justify-center mx-auto">
-                  <Sparkles className="w-6 h-6 text-[#C6F432]" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center mx-auto">
+                  <Sparkles className="w-6 h-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-foreground">
@@ -799,10 +734,10 @@ export function NotebookWorkspacePage() {
                     className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold ${
                       isUser
                         ? "bg-primary text-primary-foreground"
-                        : "bg-[#C6F432]/15 border border-[#C6F432]/30 text-[#C6F432]"
+                        : "bg-primary/15 border border-primary/30 text-primary"
                     }`}
                   >
-                    {isUser ? "U" : <Sparkles className="w-3.5 h-3.5 text-[#C6F432]" />}
+                    {isUser ? "U" : <Sparkles className="w-3.5 h-3.5 text-primary" />}
                   </div>
 
                   {/* Message Bubble */}
@@ -816,14 +751,29 @@ export function NotebookWorkspacePage() {
                     {isUser ? (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     ) : (
-                      <MarkdownContent content={msg.content} />
+                      <>
+                        <div className="flex items-center gap-1.5 pb-1.5 border-b border-border/30 text-[10px]">
+                          {msg.citations && msg.citations.length > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-primary font-semibold">
+                              <BookMarked className="w-3 h-3 text-primary" />
+                              Document-Grounded ({msg.citations.length} {msg.citations.length === 1 ? 'citation' : 'citations'})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-muted-foreground">
+                              <Sparkles className="w-3 h-3 text-primary/70" />
+                              General Academic AI
+                            </span>
+                          )}
+                        </div>
+                        <MarkdownContent content={msg.content} />
+                      </>
                     )}
 
                     {/* Citations below assistant message */}
                     {!isUser && msg.citations && msg.citations.length > 0 && (
                       <div className="pt-2 mt-2 border-t border-border/40">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                          <BookMarked className="w-3 h-3 text-[#C6F432]" />
+                          <BookMarked className="w-3 h-3 text-primary" />
                           Grounded Citations:
                         </p>
                         <div className="flex flex-wrap gap-1.5">
@@ -832,7 +782,7 @@ export function NotebookWorkspacePage() {
                               key={cIdx}
                               type="button"
                               onClick={() => handleCitationClick(cite)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#C6F432]/10 border border-[#C6F432]/25 text-[#C6F432] hover:bg-[#C6F432]/20 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20 transition-colors"
                               title={`Chunk #${cite.chunk_index}: Click to inspect source`}
                             >
                               <span>[{cIdx + 1}]</span>
@@ -851,25 +801,38 @@ export function NotebookWorkspacePage() {
             {/* Live Streaming Message */}
             {isGenerating && streamingText && (
               <div className="flex gap-3 max-w-3xl mr-auto">
-                <div className="w-7 h-7 rounded-lg bg-[#C6F432]/15 border border-[#C6F432]/30 text-[#C6F432] flex items-center justify-center shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 text-[#C6F432] animate-pulse" />
+                <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 text-primary flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
                 </div>
                 <div className="space-y-2 rounded-2xl p-4 text-xs leading-relaxed max-w-[85vw] sm:max-w-xl bg-card border border-border/80 text-foreground rounded-tl-sm shadow-xs">
+                  <div className="flex items-center gap-1.5 pb-1.5 border-b border-border/30 text-[10px]">
+                    {streamingCitations.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 text-primary font-semibold">
+                        <BookMarked className="w-3 h-3 text-primary" />
+                        Document-Grounded ({streamingCitations.length})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
+                        <Sparkles className="w-3 h-3 text-primary/70" />
+                        General Academic AI
+                      </span>
+                    )}
+                  </div>
                   <MarkdownContent content={streamingText} />
-                  <span className="inline-block w-1.5 h-3 bg-[#C6F432] ml-1 animate-pulse" />
+                  <span className="inline-block w-1.5 h-3 bg-primary ml-1 animate-pulse" />
 
                   {/* Citations during stream */}
                   {streamingCitations.length > 0 && (
                     <div className="pt-2 mt-2 border-t border-border/40">
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                        <BookMarked className="w-3 h-3 text-[#C6F432]" />
+                        <BookMarked className="w-3 h-3 text-primary" />
                         Identified Grounding Sources:
                       </p>
                       <div className="flex flex-wrap gap-1.5">
                         {streamingCitations.map((cite, cIdx) => (
                           <span
                             key={cIdx}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#C6F432]/10 border border-[#C6F432]/25 text-[#C6F432]"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary/10 border border-primary/25 text-primary"
                           >
                             <span>[{cIdx + 1}]</span>
                             <span className="truncate max-w-[120px]">{cite.display_title}</span>
@@ -915,7 +878,7 @@ export function NotebookWorkspacePage() {
                 value={inputPrompt}
                 onChange={(e) => setInputPrompt(e.target.value)}
                 disabled={isGenerating}
-                className="w-full pl-4 pr-24 py-3 text-xs rounded-xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-[#C6F432] focus:border-transparent text-foreground placeholder:text-muted-foreground"
+                className="w-full pl-4 pr-24 py-3 text-xs rounded-xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground"
               />
 
               <div className="absolute right-2 flex items-center gap-1">
@@ -965,43 +928,28 @@ export function NotebookWorkspacePage() {
       </div>
 
       {/* Delete Source Dialog */}
-      <Dialog
+      <DeleteSourceDialog
+        source={sourceToDelete}
         open={Boolean(sourceToDelete)}
         onOpenChange={(open) => {
           if (!open) setSourceToDelete(null);
         }}
-        title="Delete Source"
-        description="Permanently remove this document source from the notebook."
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Are you sure you want to remove{" "}
-            <strong className="text-foreground font-bold">
-              {sourceToDelete?.display_title}
-            </strong>
-            ? Its extracted text and grounding chunks will no longer be available in AI chat queries.
-          </p>
+        onConfirm={handleDeleteSourceConfirm}
+        isDeleting={deletingSource}
+      />
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setSourceToDelete(null)}
-              disabled={deletingSource}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDeleteSourceConfirm}
-              isLoading={deletingSource}
-            >
-              Delete Source
-            </Button>
-          </div>
-        </div>
-      </Dialog>
+      {/* Source Viewer Modal */}
+      <SourceViewerModal
+        source={sourceToView}
+        open={Boolean(sourceToView)}
+        onOpenChange={(open) => {
+          if (!open) setSourceToView(null);
+        }}
+        onDeleteRequest={(src) => {
+          setSourceToView(null);
+          setSourceToDelete(src);
+        }}
+      />
 
       {/* Delete Chat Dialog */}
       <Dialog
