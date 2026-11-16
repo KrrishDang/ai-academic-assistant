@@ -212,16 +212,16 @@ The Study Studio provides eight interactive study tools + two modal curriculum g
 
 | Category | Tool | Endpoint | Format | Parser / Runner |
 | :--- | :--- | :--- | :---: | :--- |
-| **Notes & Summaries** | Comprehensive Notes | `/generate/notes` | SSE Markdown | Streamed Markdown viewer with copy/export |
-| | Executive Summary | `/generate/summary` | SSE Markdown | Streamed Markdown viewer |
-| | Study Guide Chapters | `/notebooks/{id}/study-materials/study-guide` | Saved JSON | Multi-chapter accordion with completion tracking |
-| **Exams & Tests** | 5-Mark Exam Answer | `/generate/five-marks` | SSE Markdown | Structured 150–200 word model answer format |
-| | 10-Mark Exam Answer | `/generate/ten-marks` | SSE Markdown | Detailed essay structure with sections & conclusion |
-| | Interactive MCQ Quiz | `/generate/mcqs` | Validated JSON | Interactive runner (`parseMCQResponse`) with scoring & feedback |
-| | Viva Question Prep | `/generate/viva` | Validated JSON | Oral exam simulator (`parseVivaResponse`) with answer reveal |
-| | Full Exam Simulator | `/notebooks/{id}/study-materials/exam-paper` | Saved JSON | Timed exam paper with section mark weighting (50/100 marks) |
-| **Concept Breakdown** | Spaced Flashcards | `/generate/flashcards` | Validated JSON | 3D Flip-card engine (`parseFlashcardResponse`) for active recall |
-| | Explain Simply (ELI5) | `/generate/explanation` | SSE Markdown | Intuitive plain-language analogies |
+| **Notes & Summaries** | Comprehensive Notes | `/api/v1/generate/notes` | SSE Markdown | Streamed Markdown viewer with copy/export |
+| | Executive Summary | `/api/v1/generate/summary` | SSE Markdown | Streamed Markdown viewer |
+| | Study Guide Chapters | `/api/v1/notebooks/{id}/generate/study-guide` | Saved JSON | Multi-chapter accordion with completion tracking |
+| **Exams & Tests** | 5-Mark Exam Answer | `/api/v1/generate/5-mark-answer` | SSE Markdown | Structured 250–350 word model answer format |
+| | 10-Mark Exam Answer | `/api/v1/generate/10-mark-answer` | SSE Markdown | Detailed essay structure with sections & conclusion |
+| | Interactive MCQ Quiz | `/api/v1/generate/mcqs` | Validated JSON | Interactive runner (`parseMCQResponse`) with scoring & feedback |
+| | Viva Question Prep | `/api/v1/generate/viva-questions` | Validated JSON | Oral exam simulator (`parseVivaResponse`) with answer reveal |
+| | Full Exam Simulator | `/api/v1/notebooks/{id}/generate/exam-paper` | Saved JSON | Timed exam paper with section mark weighting (50/100 marks) |
+| **Concept Breakdown** | Spaced Flashcards | `/api/v1/generate/flashcards` | Validated JSON | 3D Flip-card engine (`parseFlashcardResponse`) for active recall |
+| | Explain Simply (ELI5) | `/api/v1/generate/explain-simply` | SSE Markdown | Intuitive plain-language analogies |
 
 ### Server-Side Document Resolution:
 All tools pass `notebook_id` or `source_id` directly in `NotesGenerationRequest`. The backend resolves the text server-side from PostgreSQL, preventing client payload bloat and securing proprietary materials.

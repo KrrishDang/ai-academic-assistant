@@ -10,17 +10,17 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Google Gemini](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash-4285F4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev)
 [![Tests Passing](https://img.shields.io/badge/Tests-162%20Frontend%20%7C%2041%20Backend-brightgreen?style=flat-square)](docs/Testing.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](#13-license)
 
 ---
 
 ## 1. Executive Summary
 
-**AI Academic Assistant** is a full-stack, enterprise-grade academic workspace built for university students, educators, and researchers. By synthesizing course materials (lecture PDFs, DOCX syllabi, PPTX slide decks, and plain text notes), the system eliminates study fragmentation through a unified **Chat-Centric Workspace**.
+**AI Academic Assistant** is a full-stack academic workspace built for university students, educators, and researchers. By synthesizing course materials (lecture PDFs, DOCX syllabi, PPTX slide decks, and plain text notes), the system eliminates study fragmentation through a unified **Chat-Centric Workspace**.
 
 Unlike generic AI chat wrappers that hallucinate unsupported claims, AI Academic Assistant employs a **Grounded Retrieval-Augmented Generation (RAG)** pipeline that indexes uploaded documents, enforces token budgets, isolates untrusted text inside an anti-injection `<grounding_context>` XML sandbox, and mandates exact inline source citations (`[Source: <filename>]`).
 
-In addition to interactive tutor chat with Server-Sent Events (SSE) streaming, the platform integrates **Study Studio**: a suite of eight generative tools delivering structured examination answers (5-mark and 10-mark formats), oral viva preparation, spaced-repetition flashcards, and self-scoring MCQ quizzes.
+In addition to interactive tutor chat with Server-Sent Events (SSE) streaming, the platform integrates **Study Studio**: a multi-tiered generative engine delivering on-the-fly streaming study aids, interactive quizzes, oral exam preparation, and persisted curriculum-wide course materials.
 
 ---
 
@@ -30,15 +30,15 @@ In addition to interactive tutor chat with Server-Sent Events (SSE) streaming, t
 flowchart LR
     A["1. Create Chat<br/>(Course Workspace)"] --> B["2. Upload Sources<br/>(PDF, DOCX, PPTX)"]
     B --> C["3. Grounded Chat<br/>(SSE + Inline Citations)"]
-    C --> D["4. Study Studio<br/>(Notes, 5/10-Mark, MCQs)"]
-    D --> E["5. Practice & Revise<br/>(Flashcards, Viva Prep)"]
+    C --> D["4. Study Studio<br/>(10 Tools / 3 Categories)"]
+    D --> E["5. Practice & Revise<br/>(Flashcards, Viva, Exams)"]
 ```
 
 1. **Create Chat:** Start an isolated workspace dedicated to a specific subject, course module, or exam topic.
 2. **Upload Sources:** Add textbooks, lecture slides, research papers, and assignments to the workspace's Sources Rail.
 3. **Grounded Ingestion:** Text is automatically parsed via PyMuPDF, chunked into 1200-character segments, and indexed for grounding.
 4. **Interactive Chat:** Ask complex questions and receive real-time, streaming responses grounded exclusively in your documents with verified citations.
-5. **Generate Study Materials:** One-click generation of university-format 5-mark and 10-mark model answers, flashcards, MCQs, and oral viva questions.
+5. **Study Studio Exploration:** Generate structured answers, test knowledge via interactive quizzes, practice viva questions, or synthesize full course study guides and exam papers.
 
 ---
 
@@ -47,9 +47,9 @@ flowchart LR
 ### 3.1 Chat-Centric Academic Workspace
 - **Unified Experience:** Every academic chat is internally backed by an isolated Course Notebook, seamlessly binding message history, uploaded sources, and generated study materials without cognitive friction.
 - **Three-Panel Layout:**
-  - **Left Rail (Sources):** Live list of uploaded course documents with parsing status badges (`processing`, `completed`, `failed`), file sizes, and quick upload modal.
+  - **Left Rail (Sources Rail):** Live list of uploaded course documents with parsing status badges (`processing`, `completed`, `failed`), file sizes, and quick upload modal.
   - **Center Panel (Tutor Chat):** Streaming conversation interface with auto-scroll, pinned composer, and suggested topic prompts.
-  - **Right Panel (Study Studio):** Tabbed studio housing the 8-tool generative engine and saved course materials.
+  - **Right Panel (Study Studio):** Comprehensive study tools panel organized into 3 distinct categories with tabbed access to active tool output and persisted course materials.
 
 ### 3.2 Multi-Format Document Ingestion Engine
 - Supports **PDF**, **DOCX**, **PPTX**, and **TXT** files.
@@ -62,19 +62,51 @@ flowchart LR
 - **Prompt Injection Defense:** If course materials contain malicious instructions (e.g., *"Ignore all previous instructions"*), the model treats them strictly as inert reference data.
 - **Verified Citations:** Factual claims are attributed via `[Source: <filename>]`. If information is missing from the sources, the assistant transparently discloses it rather than fabricating answers.
 
-### 3.4 Study Studio: 8-Tool Generative Engine
-1. **📘 Comprehensive Notes:** High-yield markdown notes containing key concepts, comparison tables, definitions glossary, exam points, and mnemonics.
-2. **📋 Executive Summary:** Concise, student-friendly academic synthesis highlighting core themes and essential takeaways.
-3. **✍️ 5-Mark Exam Answers:** University-calibrated answers (250–350 words) with structured introduction, 4–5 bullet points with bold keywords, diagram suggestions, and exam tips.
-4. **📝 10-Mark Exam Answers:** Comprehensive essay-style answers (500–700 words) with numbered subsections, flowcharts, in-depth explanations, and potential exam questions.
-5. **❓ Interactive MCQ Quiz:** Rigorous multiple-choice quizzes output as strict JSON with 4 balanced options, difficulty ratings, and educational rationales.
-6. **🎤 Viva Question Prep:** Oral exam simulation with examiner-style questions, model 30–120s spoken answers, and scoring criteria key points.
-7. **🧠 Spaced Flashcards:** Interactive 3D flip-card study deck formatted for active recall and term memorization.
-8. **💡 Explain Simply (Jargon Buster):** Plain-language conceptual breakdown pairing technical jargon with intuitive analogies and self-test questions.
+### 3.4 Study Studio: Architecture & Tool Breakdown
+
+The Study Studio architecture separates immediate interactive exploration from persisted, curriculum-aligned academic artifacts:
+
+#### Frontend Surface: 10 Tools Across 3 Categories
+The client-side `StudyStudioPanel` organizes capabilities into three distinct educational categories:
+
+1. **Category 1: Notes & Summaries**
+   - **Comprehensive Notes:** High-yield markdown notes containing key concepts, comparison tables, definitions glossary, exam points, and mnemonics (powered by streaming endpoint `/api/v1/generate/notes`).
+   - **Executive Summary:** Concise, student-friendly academic synthesis highlighting core themes and essential takeaways (powered by streaming endpoint `/api/v1/generate/summary`).
+   - **Study Guide Chapters:** Multi-chapter curriculum notes generated across all notebook sources and saved persistently to the workspace (invokes modal action -> `/api/v1/notebooks/{id}/generate/study-guide`).
+
+2. **Category 2: Exams & Tests**
+   - **5-Mark Exam Answer:** University-calibrated answers (250–350 words) with structured introduction, 4–5 bullet points with bold keywords, diagram suggestions, and exam tips (powered by streaming endpoint `/api/v1/generate/5-mark-answer`).
+   - **10-Mark Exam Answer:** Comprehensive essay-style answers (500–700 words) with numbered subsections, flowcharts, in-depth explanations, and potential exam questions (powered by streaming endpoint `/api/v1/generate/10-mark-answer`).
+   - **Interactive MCQ Quiz:** Rigorous multiple-choice quizzes output as structured JSON with 4 balanced options, difficulty ratings, and educational rationales (powered by streaming endpoint `/api/v1/generate/mcqs`).
+   - **Viva Question Prep:** Oral exam simulation with examiner-style questions, model 30–120s spoken answers, and scoring criteria key points (powered by streaming endpoint `/api/v1/generate/viva-questions`).
+   - **Full Exam Simulator:** Structured university exam paper (e.g., 50 or 100 marks) with 5-mark and 10-mark sections, model answers, and scoring keys saved persistently (invokes modal action -> `/api/v1/notebooks/{id}/generate/exam-paper`).
+
+3. **Category 3: Concept Breakdown**
+   - **Spaced Flashcards:** Interactive 3D flip-card study deck formatted for active recall and term memorization (powered by streaming endpoint `/api/v1/generate/flashcards`).
+   - **Explain Simply (ELI5):** Plain-language conceptual breakdown pairing technical jargon with intuitive analogies and self-test questions (powered by streaming endpoint `/api/v1/generate/explain-simply`).
+
+#### Backend Implementation: 8 Streaming + 3 Persisted Endpoints
+- **8 Streaming Generation Endpoints (`backend/app/api/generation.py`):**
+  Deliver immediate Server-Sent Events (SSE) streaming for rapid iteration:
+  - `POST /api/v1/generate/notes`
+  - `POST /api/v1/generate/summary`
+  - `POST /api/v1/generate/5-mark-answer`
+  - `POST /api/v1/generate/10-mark-answer`
+  - `POST /api/v1/generate/mcqs`
+  - `POST /api/v1/generate/viva-questions`
+  - `POST /api/v1/generate/flashcards`
+  - `POST /api/v1/generate/explain-simply`
+  *(All 8 endpoints resolve document text server-side via `source_id` or `notebook_id` to eliminate client payload bloat).*
+
+- **3 Persisted-Material Generation Endpoints (`backend/app/api/study_materials.py`):**
+  Synthesize all eligible documents in a workspace and save structured records to PostgreSQL:
+  - `POST /api/v1/notebooks/{id}/generate/study-guide`
+  - `POST /api/v1/notebooks/{id}/generate/flashcards`
+  - `POST /api/v1/notebooks/{id}/generate/exam-paper`
 
 ### 3.5 Academic Monolith Theme System
 - Designed with **Zero-Flash Pre-Paint Scripting** in `index.html`.
-- Custom high-contrast palette:
+- High-contrast visual tokens:
   - **Dark Mode (Default):** Midnight Black (`#0B0B0C`), Charcoal Surface (`#131315`), and Electric Lime (`#C6F432`) accents.
   - **Light Mode:** Off-white canvas (`#F8F9FA`), Slate borders (`#E5E7EB`), and Deep Charcoal typography (`#111827`).
   - **System Mode:** Automatic synchronization with OS dark/light mode preferences.
@@ -91,7 +123,7 @@ flowchart TD
         Workspace["Chat Workspace (3-Panel Layout)"]
         SourcesRail["Sources Rail (Upload & Status)"]
         ChatStream["SSE Chat Stream (Auto-Scroll)"]
-        StudyStudio["Study Studio (8-Tool Engine)"]
+        StudyStudio["Study Studio (10 Tools / 3 Categories)"]
     end
 
     subgraph Backend Tier [Backend — FastAPI & Python 3.10+]
@@ -101,7 +133,7 @@ flowchart TD
         subgraph Subsystems
             DocService["Document Ingestion Service<br/>(PyMuPDF, docx, pptx)"]
             GroundingSvc["GroundingService<br/>(Chunking, Token Budget, Sandboxing)"]
-            PromptSvc["PromptService<br/>(8 Tool Prompts & Strict JSON Schemas)"]
+            PromptSvc["PromptService<br/>(Prompt Builders & Schema Enforcement)"]
             GeminiClient["Direct Gemini API Client<br/>(gemini-2.5-flash)"]
         end
 
@@ -120,7 +152,7 @@ flowchart TD
 
     SourcesRail -->|Multipart Upload| Router
     ChatStream -->|SSE Event Stream| Router
-    StudyStudio -->|Server-Side Resolution| Router
+    StudyStudio -->|Streaming & Persisted Calls| Router
 
     Router --> AuthMiddleware
     AuthMiddleware --> DocService
@@ -139,7 +171,32 @@ flowchart TD
 
 ---
 
-## 5. Technology Stack
+## 5. Visual Layout & User Interface
+
+> [!NOTE]
+> To ensure absolute factual accuracy without fabricated UI mockups, interface layouts and component states are represented via vector architecture models and live component tests. The application runs a clean 3-panel workspace:
+
+```
++-------------------+---------------------------------------+----------------------------------+
+| Sources Rail      | Grounded Tutor Discussion             | Study Studio (Right Panel)       |
+| (Left, 280px)     | (Center, Flexible Viewport)           | (Right, 360px-420px)             |
++-------------------+---------------------------------------+----------------------------------+
+| + Add Document    | Message Thread                        | [Notes & Summaries]              |
+| [PDF] Syllabus    | - Grounded Answers                    | - Comprehensive Notes            |
+| [PPT] Lecture 01  | - [Source: Syllabus, Page 4]          | - Executive Summary              |
+| [DOC] Lab Manual  | - Markdown Tables & Code Blocks       | - Study Guide Chapters           |
+|                   |                                       | [Exams & Tests]                  |
+| Status Badges:    | Pinned Composer (Bottom):             | - 5-Mark / 10-Mark Answers       |
+| [completed]       | [ Ask questions about course docs... ]| - MCQ Quiz / Viva Prep           |
+| [processing]      | [ Send (Enter) ]                      | - Full Exam Simulator            |
+|                   |                                       | [Concept Breakdown]              |
+|                   |                                       | - Flashcards / Explain Simply    |
++-------------------+---------------------------------------+----------------------------------+
+```
+
+---
+
+## 6. Technology Stack
 
 ### Frontend
 - **Framework:** React 18.3 with TypeScript 5.5
@@ -164,7 +221,7 @@ flowchart TD
 
 ---
 
-## 6. Local Development Setup
+## 7. Local Development Setup
 
 ### Prerequisites
 - **Node.js:** v18.0.0 or higher (`node -v`)
@@ -174,7 +231,7 @@ flowchart TD
 
 ---
 
-### 6.1 Backend Setup
+### 7.1 Backend Setup
 
 1. **Navigate to backend and configure virtual environment:**
    ```powershell
@@ -221,7 +278,7 @@ flowchart TD
 
 ---
 
-### 6.2 Frontend Setup
+### 7.2 Frontend Setup
 
 1. **Navigate to frontend and install packages:**
    ```bash
@@ -246,11 +303,11 @@ flowchart TD
 
 ---
 
-## 7. Testing & Quality Verification
+## 8. Testing & Quality Verification
 
 The repository enforces strict testing policies before any release or commit.
 
-### 7.1 Backend Unit & Integration Tests (41 Tests)
+### 8.1 Backend Unit & Integration Tests (41 Tests)
 ```powershell
 # Windows PowerShell
 $env:PYTHONPATH="backend"
@@ -262,7 +319,7 @@ python -m unittest backend/tests/test_generation.py -v
 python -m unittest backend/tests/test_database_startup_and_migration_lifecycle.py -v
 ```
 
-### 7.2 Frontend Test Suite (162 Tests)
+### 8.2 Frontend Test Suite (162 Tests)
 ```bash
 npm --prefix frontend test -- --run
 ```
@@ -275,7 +332,7 @@ Output:
 ℹ duration_ms ~2200ms
 ```
 
-### 7.3 Frontend Production Build Verification
+### 8.3 Frontend Production Build Verification
 ```bash
 npm --prefix frontend run build
 ```
@@ -284,7 +341,7 @@ npm --prefix frontend run build
 
 ---
 
-## 8. Database Migrations & Single-Path Execution
+## 9. Database Migrations & Single-Path Execution
 
 Database migrations are tracked via Alembic with a linear 11-migration chain ending at head `b2c3d4e5f6a7`.
 
@@ -311,9 +368,9 @@ flowchart LR
 
 ---
 
-## 9. Production Deployment
+## 10. Production Deployment
 
-### 9.1 Backend on Railway
+### 10.1 Backend on Railway
 - **Build Type:** Dockerfile (`backend/Dockerfile`)
 - **Container Entrypoint:**
   ```dockerfile
@@ -321,7 +378,7 @@ flowchart LR
   ```
 - **Healthcheck Path:** `/api/v1/health`
 
-### 9.2 Frontend on Vercel
+### 10.2 Frontend on Vercel
 - **Framework Preset:** Vite
 - **Root Directory:** `frontend`
 - **Output Directory:** `dist`
@@ -337,7 +394,7 @@ flowchart LR
 
 ---
 
-## 10. Security & Multi-Tenancy Architecture
+## 11. Security & Multi-Tenancy Architecture
 
 1. **Authentication First:** All data endpoints require a valid JWT bearer token resolved via `Depends(get_current_user)`.
 2. **Ownership Scoping:** All queries strictly filter on `user_id == current_user.id`.
@@ -347,7 +404,7 @@ flowchart LR
 
 ---
 
-## 11. Project Directory Structure
+## 12. Project Directory Structure
 
 ```text
 ai-academic-assistant/
@@ -384,19 +441,18 @@ ai-academic-assistant/
 │   ├── PromptEngineering.md # System prompts, XML sandboxing, and JSON repair schemas
 │   ├── ConceptNote.md       # Original academic purpose and vision
 │   └── ProjectReport.md     # Engineering report and feature audit
-├── CHANGELOG.md             # Semantic versioning release history
+├── CHANGELOG.md             # Git milestone release history
 ├── AGENTS.md                # Permanent agent engineering rules and skill activation matrix
-├── LICENSE                  # MIT Open Source License
 └── README.md                # Project landing page and architectural overview
 ```
 
 ---
 
-## 12. Documentation Sitemap
+## 13. Documentation Sitemap
 
 | Document | Purpose |
 | :--- | :--- |
-| [docs/API.md](docs/API.md) | Comprehensive API contracts for Auth, Workspaces, Sources Rail, Grounded Chat, Study Studio, and Saved Materials. |
+| [docs/API.md](docs/API.md) | Comprehensive API contracts for Auth, Workspaces, Sources Rail, Grounded Chat, Study Studio (8 streaming + 3 persisted), and Saved Materials. |
 | [docs/Architecture.md](docs/Architecture.md) | In-depth architectural guide with Mermaid diagrams covering data model ERDs, RAG pipelines, and startup lifecycles. |
 | [docs/Setup.md](docs/Setup.md) | Step-by-step local development setup guide for Windows 11 (PowerShell) and WSL2 / Linux. |
 | [docs/Environment.md](docs/Environment.md) | Strongly-typed environment variables matrix, security requirements, and template configuration files. |
@@ -404,18 +460,18 @@ ai-academic-assistant/
 | [docs/Testing.md](docs/Testing.md) | Test suites, test runners (`node --test`, Python `unittest`), coverage metrics, and pre-flight commands. |
 | [docs/PromptEngineering.md](docs/PromptEngineering.md) | System prompt specifications, `<grounding_context>` anti-injection sandboxing, and JSON output repair. |
 | [backend/migrations/README.md](backend/migrations/README.md) | Database migration history, PostgreSQL advisory locking (`7238423`), and schema operations. |
-| [CHANGELOG.md](CHANGELOG.md) | Semantic version release history (v1.0.0, v1.5.0, v2.0.0). |
+| [CHANGELOG.md](CHANGELOG.md) | Git history and milestone release log. |
 | [AGENTS.md](AGENTS.md) | Permanent engineering rules, branding invariants, and skill activation matrix. |
 
 ---
 
-## 13. License
+## 14. License
 
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+This project is open-source software licensed under the MIT License.
 
 ---
 
-## 14. Author & Acknowledgements
+## 15. Author & Acknowledgements
 
 Created and engineered by **Krrish Dang** ([@KrrishDang](https://github.com/KrrishDang)).
 

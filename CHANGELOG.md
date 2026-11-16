@@ -1,25 +1,21 @@
 # Changelog
 
-All notable changes to the **AI Academic Assistant** project are documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable milestones and release iterations for the **AI Academic Assistant** project are documented in this file, aligned directly with the repository's Git commit history.
 
 ---
 
-## [2.0.0] - 2026-11-16
+## [Unreleased / Current Milestone] - Chat-Centric Workspace Consolidation & Production Hardening
+*Corresponds to commits `18503fc` through `131aa86` and current working-tree consolidation.*
 
 ### Added
 - **Chat-Centric Workspace Architecture:** Unified user experience revolving around **Chats** backed internally by Course Notebooks, integrating source documents, conversation history, and Study Studio into a cohesive 3-panel workspace.
-- **Study Studio 8-Tool Suite:** Server-side generative study tools with verified academic prompt engineering and strict JSON schema enforcement:
-  - Comprehensive Notes
-  - Executive Summary
-  - 5-Mark University Exam Answer (250–350 words with diagrams and exam tips)
-  - 10-Mark University Exam Answer (500–700 words with structured depth)
-  - Interactive MCQ Quiz (4 options, explanations, difficulty ratings)
-  - Viva Question Prep (examiner tone, oral answers, critical key points)
-  - Spaced Flashcard Deck (active recall front/back cards)
-  - Explain Simply / Beginner Simplifier (plain-language jargon buster and self-test)
+- **Study Studio 10-Tool Client Suite across 3 Categories:**
+  - *Notes & Summaries:* Comprehensive Notes (streaming), Executive Summary (streaming), Study Guide Chapters (persisted modal action).
+  - *Exams & Tests:* 5-Mark Exam Answer (streaming), 10-Mark Exam Answer (streaming), Interactive MCQ Quiz (streaming), Viva Question Prep (streaming), Full Exam Simulator (persisted modal action).
+  - *Concept Breakdown:* Spaced Flashcards (streaming), Explain Simply / ELI5 (streaming).
+- **Backend Dual-Tier Generative Engine:**
+  - 8 streaming generation endpoints (`/api/v1/generate/*`) in `backend/app/api/generation.py`.
+  - 3 persisted-material generation endpoints (`/api/v1/notebooks/{id}/generate/*`) in `backend/app/api/study_materials.py`.
 - **Single-Path Container Migration Runner (`app.db.migrate`):**
   - Dedicated pre-Uvicorn migration runner invoked via Docker entrypoint.
   - PostgreSQL session advisory lock (`7238423`) to serialize migrations across multiple instances or replicas.
@@ -30,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Top-Level Error Boundary & Toast Provider:** Root `ErrorBoundary` and `ToastProvider` wrapping the entire React tree in `App.tsx` to prevent blank screen crashes.
 - **Comprehensive Test Suite:**
   - 162 frontend tests across 11 test suites running on Node's native test runner (`node --test`).
-  - 36 backend generation unit tests verifying all 8 tools, error states, and schemas.
+  - 36 backend generation unit tests verifying all generation tools, error states, and schemas.
   - 5 database startup and migration lifecycle tests.
 
 ### Changed
@@ -46,7 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.5.0] - 2026-03-15
+## [Historical Milestone: StudyHub V2 Release] - 2026-03-15
+*Corresponds to Git commit `6351832` (`Merge branch 'v2/studyhub' into main`).*
 
 ### Added
 - Multi-format document parsing engine supporting PDF, DOCX, PPTX, and TXT files using PyMuPDF (`fitz`), `python-docx`, and `python-pptx`.
@@ -57,7 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2025-10-10
+## [Historical Milestone: Initial Release] - 2025-10-10
+*Corresponds to Git commit `2f3e5f8` (`Initial release`).*
 
 ### Added
 - Initial project architecture with FastAPI backend and React frontend.
