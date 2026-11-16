@@ -17,6 +17,8 @@ import { NotebookDashboardPage } from "@/pages/notebooks/NotebookDashboardPage";
 import { NotebookWorkspacePage } from "@/pages/notebooks/NotebookWorkspacePage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
+import { DesignSystemShowcasePage } from "@/pages/DesignSystemShowcasePage";
+import { PublicLandingPage } from "@/pages/PublicLandingPage";
 
 /** Root route tree for the student application. */
 export function App() {
@@ -33,6 +35,8 @@ export function App() {
               {/* Core Application Shell Routes */}
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+                <Route path="/landing" element={<PublicLandingPage />} />
+                <Route path="/welcome" element={<PublicLandingPage />} />
                 
                 {/* Protected V2 Notebook Routes */}
                 <Route
@@ -59,6 +63,7 @@ export function App() {
                 <Route path="/workspace" element={<WorkspacePage />} />
                 <Route path="/tools" element={<AIToolsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/design-system" element={<DesignSystemShowcasePage />} />
 
                 {/* 404 & Fallback */}
                 <Route path="/404" element={<NotFoundPage />} />
