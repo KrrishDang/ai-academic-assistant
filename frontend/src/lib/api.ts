@@ -521,79 +521,98 @@ export async function* chatInConversation(
   }
 }
 
+export type GenerationPayload =
+  | string
+  | {
+      extracted_text?: string;
+      source_id?: string;
+      notebook_id?: string;
+    };
+
+function buildGenerationBody(input: GenerationPayload): string {
+  if (typeof input === "string") {
+    return JSON.stringify({ extracted_text: input });
+  }
+  return JSON.stringify({
+    extracted_text: input.extracted_text,
+    source_id: input.source_id,
+    notebook_id: input.notebook_id,
+  });
+}
+
 /** Request study material and yield the server-sent response as it arrives. */
 export async function* generateNotes(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/notes", extractedText, signal);
+  yield* streamGeneration("/generate/notes", input, signal);
 }
 
 /** Request a streamed answer suitable for a five-mark exam question. */
 export async function* generateFiveMarkAnswer(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/5-mark-answer", extractedText, signal);
+  yield* streamGeneration("/generate/5-mark-answer", input, signal);
 }
 
 /** Request a streamed answer suitable for a ten-mark exam question. */
 export async function* generateTenMarkAnswer(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/10-mark-answer", extractedText, signal);
+  yield* streamGeneration("/generate/10-mark-answer", input, signal);
 }
 
 /** Request streamed multiple-choice questions with answers. */
 export async function* generateMcqs(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/mcqs", extractedText, signal);
+  yield* streamGeneration("/generate/mcqs", input, signal);
 }
 
 /** Request streamed viva questions with concise expected answers. */
 export async function* generateVivaQuestions(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/viva-questions", extractedText, signal);
+  yield* streamGeneration("/generate/viva-questions", input, signal);
 }
 
 /** Request a streamed beginner-friendly explanation. */
 export async function* explainSimply(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/explain-simply", extractedText, signal);
+  yield* streamGeneration("/generate/explain-simply", input, signal);
 }
 
 /** Request streamed flashcards. */
 export async function* generateFlashcards(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/flashcards", extractedText, signal);
+  yield* streamGeneration("/generate/flashcards", input, signal);
 }
 
 /** Request a streamed document summary. */
 export async function* generateSummary(
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
-  yield* streamGeneration("/generate/summary", extractedText, signal);
+  yield* streamGeneration("/generate/summary", input, signal);
 }
 
 async function* streamGeneration(
   path: string,
-  extractedText: string,
+  input: GenerationPayload,
   signal?: AbortSignal,
 ): AsyncGenerator<GenerationEvent> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     method: "POST",
     headers: defaultHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ extracted_text: extractedText }),
+    body: buildGenerationBody(input),
     signal,
   });
 

@@ -7,11 +7,9 @@ import {
   Sparkles,
   Search,
   Clock,
-  BookOpen,
   Settings,
   AlertCircle,
   RefreshCw,
-  FolderOpen,
   X,
   FileText,
   User,
@@ -25,8 +23,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
 import { formatRelativeTime } from "@/lib/utils";
-import { listNotebooks, type NotebookSummaryResponse } from "@/lib/api";
+import { listNotebooks, updateNotebook, deleteNotebook, type NotebookSummaryResponse } from "@/lib/api";
 import { NotebookCard } from "@/features/notebooks/components/NotebookCard";
+import { NotebookModal } from "@/features/notebooks/components/NotebookModal";
+import { DeleteNotebookDialog } from "@/features/notebooks/components/DeleteNotebookDialog";
 import { PublicLandingPage } from "@/pages/PublicLandingPage";
 import {
   createChatWorkspace,
@@ -62,6 +62,40 @@ export function DashboardPage() {
   const [creatingChat, setCreatingChat] = useState(false);
   const [creationError, setCreationError] = useState<string | null>(null);
   const [failedNotebookId, setFailedNotebookId] = useState<string | null>(null);
+
+  // Workspace Edit & Delete State
+  const [editingNotebook, setEditingNotebook] = useState<NotebookSummaryResponse | null>(null);
+  const [deletingNotebook, setDeletingNotebook] = useState<NotebookSummaryResponse | null>(null);
+
+  const handleEditSubmit = async (data: { title: string; description?: string }) => {
+    if (!editingNotebook) return;
+    try {
+      const updated = await updateNotebook(editingNotebook.id, data);
+      setRecentNotebooks((prev) =>
+        prev.map((nb) => (nb.id === updated.id ? { ...nb, ...updated } : nb))
+      );
+      setRecentChats((prev) =>
+        prev.map((c) => (c.notebookId === updated.id ? { ...c, notebookTitle: updated.title } : c))
+      );
+      toast.success("Workspace Updated", `Updated details for "${updated.title}".`);
+      setEditingNotebook(null);
+    } catch (err: any) {
+      toast.error("Update Failed", err?.message || "Could not update workspace.");
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingNotebook) return;
+    try {
+      await deleteNotebook(deletingNotebook.id);
+      setRecentNotebooks((prev) => prev.filter((nb) => nb.id !== deletingNotebook.id));
+      setRecentChats((prev) => prev.filter((c) => c.notebookId !== deletingNotebook.id));
+      toast.success("Workspace Deleted", `"${deletingNotebook.title}" has been removed.`);
+      setDeletingNotebook(null);
+    } catch (err: any) {
+      toast.error("Delete Failed", err?.message || "Could not delete workspace.");
+    }
+  };
 
   const fetchRecentChats = useCallback(async () => {
     if (!isAuthenticated) {
@@ -397,19 +431,13 @@ export function DashboardPage() {
         )}
       </div>
 
-      {/* ── Optional Quick Resume for Existing Course Notebooks ───── */}
+      {/* ── Optional Quick Resume for Existing Course Workspaces ──── */}
       {recentNotebooks.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Resume Course Workspace
             </h3>
-            <Link
-              to="/notebooks"
-              className="text-xs text-primary hover:underline font-semibold"
-            >
-              View all ({recentNotebooks.length})
-            </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {recentNotebooks.slice(0, 3).map((nb) => (
@@ -417,26 +445,29 @@ export function DashboardPage() {
                 key={nb.id}
                 notebook={nb}
                 onOpen={(id) => navigate(`/notebooks/${id}`)}
-                onEdit={() => navigate(`/notebooks/${nb.id}`)}
-                onDelete={() => navigate("/notebooks")}
+                onEdit={(item) => setEditingNotebook(item)}
+                onDelete={(item) => setDeletingNotebook(item)}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Secondary Backward-Compatible Workspaces Link ────────────── */}
-      <div className="flex items-center justify-between pt-6 border-t border-border/60 text-xs text-muted-foreground">
-        <span>Looking for full course notebooks with document rails?</span>
-        <Link
-          to="/notebooks"
-          className="inline-flex items-center gap-1.5 font-semibold text-foreground hover:text-primary transition-colors"
-        >
-          <BookOpen size={14} />
-          <span>Course Notebooks Hub</span>
-          <ArrowRight size={12} />
-        </Link>
-      </div>
+      {/* Edit Workspace Modal */}
+      <NotebookModal
+        open={Boolean(editingNotebook)}
+        onOpenChange={(open) => !open && setEditingNotebook(null)}
+        notebookToEdit={editingNotebook}
+        onSubmit={handleEditSubmit}
+      />
+
+      {/* Delete Workspace Confirmation Dialog */}
+      <DeleteNotebookDialog
+        open={Boolean(deletingNotebook)}
+        onOpenChange={(open) => !open && setDeletingNotebook(null)}
+        notebook={deletingNotebook}
+        onConfirm={handleDeleteConfirm}
+      />
     </div>
   );
 }

@@ -2,12 +2,9 @@ import React, { useState, useRef } from "react";
 import {
   FileText,
   Upload,
-  Plus,
-  MessageSquare,
   Search,
   Loader2,
   X,
-  Trash2,
   FileUp,
 } from "lucide-react";
 import type { SourceResponse, ConversationResponse } from "@/lib/api";
@@ -25,13 +22,13 @@ interface SourcesRailProps {
   onUploadFile: (files: FileList | null) => Promise<void> | void;
   onViewSource: (source: SourceResponse) => void;
   onDeleteSource: (source: SourceResponse) => void;
-  // Conversations integration in the left rail
-  conversations: ConversationResponse[];
-  activeConversationId: string | null;
-  onSelectConversation: (id: string) => void;
-  onCreateConversation: () => Promise<void> | void;
-  onDeleteConversation: (conv: ConversationResponse) => void;
-  isCreatingChat: boolean;
+  // Conversations integration (optional for backward compatibility)
+  conversations?: ConversationResponse[];
+  activeConversationId?: string | null;
+  onSelectConversation?: (id: string) => void;
+  onCreateConversation?: () => Promise<void> | void;
+  onDeleteConversation?: (conv: ConversationResponse) => void;
+  isCreatingChat?: boolean;
   className?: string;
 }
 
@@ -210,16 +207,26 @@ export function SourcesRail({
         {/* Sources List */}
         <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
           {sources.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground space-y-2">
-              <div className="w-10 h-10 rounded-xl bg-muted/60 border border-border/60 flex items-center justify-center text-muted-foreground/80">
-                <Upload className="w-5 h-5" />
+            <div className="h-full flex flex-col items-center justify-center p-6 text-center text-muted-foreground space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-muted/60 border border-border/60 flex items-center justify-center text-muted-foreground/80 shadow-xs">
+                <Upload className="w-6 h-6" />
               </div>
-              <div>
-                <p className="text-xs font-semibold text-foreground">No sources added yet</p>
-                <p className="text-[11px] text-muted-foreground mt-1 max-w-[220px] mx-auto leading-relaxed">
-                  Upload textbook chapters, slide decks, or lecture notes to ground the AI Tutor in course materials.
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-foreground">No sources added yet</p>
+                <p className="text-[11px] text-muted-foreground max-w-[220px] mx-auto leading-relaxed">
+                  Uploading course materials is optional. Adding lecture slides, syllabus, or notes grounds discussions and AI study tools directly in your course.
                 </p>
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-8 px-3 text-xs font-semibold gap-1.5"
+              >
+                <FileUp className="w-3.5 h-3.5" />
+                <span>Upload Material</span>
+              </Button>
               <p className="text-[10px] text-muted-foreground/60">
                 Supported: PDF, DOCX, PPTX, TXT (&le; 20 MB)
               </p>
@@ -238,70 +245,6 @@ export function SourcesRail({
                 onDelete={onDeleteSource}
               />
             ))
-          )}
-        </div>
-      </div>
-
-      {/* ─── Conversations Section (Bottom Dock / 240px) ────────────────────── */}
-      <div className="h-56 shrink-0 flex flex-col bg-muted/20 border-t border-border/60">
-        <div className="p-3 pb-2 flex items-center justify-between border-b border-border/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              Chats ({conversations.length})
-            </h3>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCreateConversation}
-            isLoading={isCreatingChat}
-            className="h-7 px-2 text-[11px] font-bold"
-          >
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            New Chat
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {conversations.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-[11px]">
-              No chats created yet. Click "+ New Chat" to begin.
-            </div>
-          ) : (
-            conversations.map((conv) => {
-              const isActive = conv.id === activeConversationId;
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => onSelectConversation(conv.id)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between cursor-pointer transition-all duration-150 group ${
-                    isActive
-                      ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                      : "text-foreground hover:bg-muted/70"
-                  }`}
-                >
-                  <span className="truncate flex-1 mr-2">{conv.title}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conv);
-                    }}
-                    className={`p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${
-                      isActive
-                        ? "hover:bg-primary-foreground/20 text-primary-foreground"
-                        : "hover:bg-destructive/10 text-destructive"
-                    }`}
-                    title="Delete chat"
-                    aria-label={`Delete ${conv.title}`}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              );
-            })
           )}
         </div>
       </div>

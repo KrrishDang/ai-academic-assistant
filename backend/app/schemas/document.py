@@ -28,6 +28,9 @@ class DocumentResponse(BaseModel):
         from_attributes = True
 
 
+from typing import Optional
+
+
 class DocumentRenameRequest(BaseModel):
     """Payload to rename an uploaded document."""
 
@@ -35,6 +38,8 @@ class DocumentRenameRequest(BaseModel):
 
 
 class NotesGenerationRequest(BaseModel):
-    """Text extracted from a document for notes generation."""
+    """Text extracted from a document or reference identifiers for server-side resolution."""
 
-    extracted_text: str = Field(min_length=1, max_length=2_000_000)
+    extracted_text: Optional[str] = Field(default=None, max_length=2_000_000)
+    source_id: Optional[uuid.UUID] = None
+    notebook_id: Optional[uuid.UUID] = None

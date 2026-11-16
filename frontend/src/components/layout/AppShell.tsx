@@ -111,7 +111,12 @@ export function AppShell({ children }: AppShellProps) {
     location.pathname.startsWith("/notebooks/") && location.pathname !== "/notebooks";
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden selection:bg-[#C6F432]/30 selection:text-[#0B0B0C] dark:selection:text-[#C6F432]">
+    <div
+      className={cn(
+        "bg-background text-foreground flex overflow-x-hidden selection:bg-[#C6F432]/30 selection:text-[#0B0B0C] dark:selection:text-[#C6F432]",
+        isEdgeToEdgeWorkspace ? "h-screen max-h-screen overflow-hidden" : "min-h-screen",
+      )}
+    >
       {/* ─── 1. Desktop Persistent Sidebar (>= 1024px) ────────────────── */}
       <div
         className={cn(
@@ -174,20 +179,23 @@ export function AppShell({ children }: AppShellProps) {
         className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-150 ease-out",
           !isMobile && (isCollapsed ? "lg:pl-[68px]" : "lg:pl-[240px]"),
+          isEdgeToEdgeWorkspace && "h-screen max-h-screen overflow-hidden",
         )}
       >
         {/* Universal Contextual Workspace Header */}
-        <WorkspaceHeader
-          onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
-          onOpenSearch={() => setSearchModalOpen(true)}
-        />
+        {!isEdgeToEdgeWorkspace && (
+          <WorkspaceHeader
+            onOpenMobileDrawer={() => setMobileDrawerOpen(true)}
+            onOpenSearch={() => setSearchModalOpen(true)}
+          />
+        )}
 
         {/* Dynamic Route Content */}
         <main
           className={cn(
-            "flex-1",
+            "flex-1 min-h-0",
             isEdgeToEdgeWorkspace
-              ? "p-0 overflow-hidden"
+              ? "p-0 overflow-hidden flex flex-col h-full"
               : "p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full",
           )}
         >

@@ -50,6 +50,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog } from "@/components/ui/dialog";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { StudyStudioPanel } from "./StudyStudioPanel";
 import {
   SourcesRail,
@@ -134,14 +135,35 @@ export function NotebookWorkspacePage() {
     }
   };
 
-  // Auto-scroll to bottom of message list
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Scroll Container & User Scroll Position Tracking
+  const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const isNearBottomRef = useRef(true);
+
+  const handleMessagesScroll = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // User is near bottom if within 80px
+    isNearBottomRef.current = distanceFromBottom <= 80;
   };
 
+  // Auto-scroll to bottom of message list
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Auto-scroll on new messages / streaming tokens only if already near bottom
   useEffect(() => {
-    scrollToBottom();
+    if (isNearBottomRef.current) {
+      scrollToBottom("smooth");
+    }
   }, [messages, streamingText]);
+
+  // When switching conversation or on initial load, force scroll to bottom
+  useEffect(() => {
+    isNearBottomRef.current = true;
+    scrollToBottom("auto");
+  }, [activeConversationId]);
 
   // Initial Notebook Fetch
   const loadNotebookData = async (isPolling = false) => {
@@ -377,6 +399,8 @@ export function NotebookWorkspacePage() {
     setIsGenerating(true);
     setStreamingText("");
     setStreamingCitations([]);
+    isNearBottomRef.current = true;
+    setTimeout(() => scrollToBottom("smooth"), 50);
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -503,14 +527,14 @@ export function NotebookWorkspacePage() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-background">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-background">
       {/* ─── Top Workspace Bar ────────────────────────────────────────────── */}
       <header className="h-14 border-b border-border/80 px-4 flex items-center justify-between shrink-0 bg-card/40 backdrop-blur-md z-10">
         <div className="flex items-center gap-3 overflow-hidden">
           <Link
-            to="/notebooks"
+            to="/"
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
-            title="Back to Notebooks"
+            title="Back to Chats"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -616,8 +640,8 @@ export function NotebookWorkspacePage() {
           </button>
         </div>
 
-        {/* Desktop Quick Stats */}
-        <div className="hidden lg:flex items-center gap-2">
+        {/* Desktop Quick Stats & Theme Toggle */}
+        <div className="hidden lg:flex items-center gap-2.5">
           <Badge variant="outline" className="text-[10px] py-0.5 px-2 font-medium">
             <FileText className="w-3 h-3 mr-1 text-muted-foreground" />
             {sources.length} {sources.length === 1 ? "source" : "sources"}
@@ -626,12 +650,13 @@ export function NotebookWorkspacePage() {
             <MessageSquare className="w-3 h-3 mr-1 text-muted-foreground" />
             {conversations.length} {conversations.length === 1 ? "chat" : "chats"}
           </Badge>
+          <ThemeToggle />
         </div>
       </header>
 
       {/* ─── 3-Column Workspace Grid ──────────────────────────────────────── */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* ─── LEFT PANEL: Sources Rail & Conversations (320px) ────────────────── */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        {/* ─── LEFT PANEL: Sources Rail (320px) ────────────────── */}
         <SourcesRail
           sources={sources}
           highlightedSourceId={highlightedSourceId}
@@ -652,7 +677,7 @@ export function NotebookWorkspacePage() {
 
         {/* ─── CENTER PANEL: Grounded AI Chat (Flex-1) ────────────────────── */}
         <main
-          className={`flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative ${
+          className={`flex-1 flex flex-col h-full min-h-0 min-w-0 bg-background overflow-hidden relative ${
             activeTab !== "chat" ? "hidden lg:flex" : "flex"
           }`}
         >
@@ -676,7 +701,11 @@ export function NotebookWorkspacePage() {
           </div>
 
           {/* Messages Thread */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleMessagesScroll}
+            className="flex-1 overflow-y-auto min-h-0 p-4 md:p-6 space-y-4"
+          >
             {loadingMessages && (
               <div className="flex items-center justify-center h-48 space-x-2">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -910,9 +939,9 @@ export function NotebookWorkspacePage() {
           </div>
         </main>
 
-        {/* ─── RIGHT PANEL: Functional Study Studio (Phase 4B) ─────────────── */}
+        {/* ─── RIGHT PANEL: Functional Study Studio ─────────────── */}
         <aside
-          className={`w-full lg:w-80 xl:w-96 shrink-0 border-l border-border/80 flex flex-col overflow-hidden ${
+          className={`w-full lg:w-80 xl:w-96 shrink-0 border-l border-border/80 flex flex-col h-full min-h-0 overflow-hidden ${
             activeTab !== "studio" ? "hidden lg:flex" : "flex"
           }`}
         >

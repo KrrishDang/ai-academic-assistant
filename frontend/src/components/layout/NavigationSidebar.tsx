@@ -103,39 +103,15 @@ export function NavigationSidebar({
       icon: MessageSquare,
       matchPrefix: "/",
     },
-    {
-      id: "settings",
-      label: "Settings",
-      to: "/settings",
-      icon: Settings,
-      matchPrefix: "/settings",
-    },
   ];
 
-  // Secondary Quick Links (preserving backward compatibility)
-  const secondaryNavItems: NavItemDef[] = [
-    {
-      id: "notebooks",
-      label: "Course Notebooks",
-      to: "/notebooks",
-      icon: BookOpen,
-      matchPrefix: "/notebooks",
-    },
-    {
-      id: "documents",
-      label: "Documents",
-      to: "/documents",
-      icon: FileText,
-      matchPrefix: "/documents",
-    },
-    {
-      id: "tools",
-      label: "AI Tools",
-      to: "/tools",
-      icon: Sparkles,
-      matchPrefix: "/tools",
-    },
-  ];
+  const settingsNavItem: NavItemDef = {
+    id: "settings",
+    label: "Settings",
+    to: "/settings",
+    icon: Settings,
+    matchPrefix: "/settings",
+  };
 
   const userInitials = useMemo(() => {
     if (user?.display_name) {
@@ -181,7 +157,7 @@ export function NavigationSidebar({
         )}
       >
         <Link
-          to="/notebooks"
+          to="/"
           onClick={() => isMobile && onCloseMobile?.()}
           className="flex items-center gap-2.5 font-extrabold tracking-tight text-foreground hover:opacity-90 transition-opacity"
           aria-label="AI Academic Assistant Home"
@@ -391,14 +367,21 @@ export function NavigationSidebar({
                           }
                         }}
                         className={cn(
-                          "w-full flex items-center gap-2 h-8 px-3 rounded-lg text-xs font-medium transition-colors text-left truncate cursor-pointer",
+                          "w-full flex items-center justify-between h-8 px-3 rounded-lg text-xs font-medium transition-colors text-left truncate cursor-pointer",
                           isCurrent
                             ? "bg-muted text-foreground font-bold border-l-2 border-primary"
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
                         )}
                       >
-                        <MessageSquare size={13} className="shrink-0 text-muted-foreground/80" />
-                        <span className="truncate">{chat.title}</span>
+                        <div className="flex items-center gap-2 truncate min-w-0">
+                          <MessageSquare size={13} className="shrink-0 text-muted-foreground/80" />
+                          <span className="truncate">{chat.title}</span>
+                        </div>
+                        {chat.sourceCount !== undefined && chat.sourceCount > 0 && (
+                          <span className="text-[10px] text-muted-foreground/70 shrink-0 font-mono">
+                            {chat.sourceCount} {chat.sourceCount === 1 ? "src" : "srcs"}
+                          </span>
+                        )}
                       </button>
                     );
                   })
@@ -408,60 +391,44 @@ export function NavigationSidebar({
           </div>
         )}
 
-        {/* ─── Secondary Resources & Tools ────────────────────────── */}
-        <div className="space-y-1 pt-1 border-t border-border/40">
-          {(!isCollapsed || isMobile) && (
-            <span className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 select-none block mb-1">
-              Library & Tools
-            </span>
-          )}
-
-          {secondaryNavItems.map((item) => {
-            const Icon = item.icon;
-            const active = location.pathname === item.to;
-
-            if (isCollapsed && !isMobile) {
-              return (
-                <div key={item.id} className="flex justify-center">
-                  <Tooltip content={item.label} placement="right">
-                    <button
-                      type="button"
-                      aria-label={item.label}
-                      onClick={() => handleNavClick(item.to)}
-                      className={cn(
-                        "h-9 w-9 rounded-xl flex items-center justify-center transition-all cursor-pointer",
-                        active
-                          ? "bg-muted text-foreground font-bold"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
-                      )}
-                    >
-                      <Icon size={16} />
-                    </button>
-                  </Tooltip>
-                </div>
-              );
-            }
-
-            return (
+        {/* ─── Settings Navigation ────────────────────────── */}
+        {(!isCollapsed || isMobile) ? (
+          <div className="pt-2 border-t border-border/40">
+            <button
+              type="button"
+              onClick={() => handleNavClick(settingsNavItem.to)}
+              className={cn(
+                "w-full flex items-center justify-between h-9 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer text-left",
+                location.pathname.startsWith("/settings")
+                  ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                <Settings size={16} className="shrink-0" />
+                <span>Settings</span>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-center pt-2 border-t border-border/40">
+            <Tooltip content="Settings" placement="right">
               <button
-                key={item.id}
                 type="button"
-                onClick={() => handleNavClick(item.to)}
+                aria-label="Settings"
+                onClick={() => handleNavClick(settingsNavItem.to)}
                 className={cn(
-                  "w-full flex items-center justify-between h-8 px-3 rounded-xl text-xs font-medium transition-all cursor-pointer text-left",
-                  active
-                    ? "bg-muted text-foreground font-bold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                  "h-9 w-9 rounded-xl flex items-center justify-center transition-all cursor-pointer",
+                  location.pathname.startsWith("/settings")
+                    ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/70",
                 )}
               >
-                <div className="flex items-center gap-2.5">
-                  <Icon size={15} className="shrink-0 text-muted-foreground" />
-                  <span>{item.label}</span>
-                </div>
+                <Settings size={16} />
               </button>
-            );
-          })}
-        </div>
+            </Tooltip>
+          </div>
+        )}
       </div>
 
       {/* ─── User Profile & Auth Footer ─────────────────────────── */}
