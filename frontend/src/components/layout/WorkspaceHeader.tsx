@@ -65,7 +65,7 @@ export function WorkspaceHeader({
     <header
       className={cn(
         "sticky top-0 z-20 flex items-center justify-between h-14 px-4 sm:px-6",
-        "border-b border-border/80 bg-card/85 backdrop-blur-md select-none transition-colors",
+        "border-b border-border/70 glass-panel select-none transition-colors",
         className,
       )}
     >

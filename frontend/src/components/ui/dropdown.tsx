@@ -110,7 +110,7 @@ export function DropdownMenu({
             exit={{ opacity: 0, scale: 0.95, y: -2 }}
             transition={{ duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
             className={cn(
-              "absolute z-50 min-w-[160px] rounded-xl border border-border/80 bg-card p-1 shadow-lg backdrop-blur-xs",
+              "absolute z-50 min-w-[160px] rounded-xl border border-white/15 dark:border-white/[0.08] glass-panel p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.35)]",
               placementStyles[placement],
               className,
             )}

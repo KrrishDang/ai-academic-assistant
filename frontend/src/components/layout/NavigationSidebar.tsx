@@ -145,7 +145,7 @@ export function NavigationSidebar({
   return (
     <aside
       className={cn(
-        "flex flex-col h-full bg-card border-r border-border/80 select-none transition-all duration-150 ease-out",
+        "flex flex-col h-full glass-panel border-r border-border/70 select-none transition-all duration-200 ease-out",
         isCollapsed && !isMobile ? "w-[68px]" : "w-[240px]",
       )}
     >

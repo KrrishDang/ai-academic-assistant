@@ -49,7 +49,7 @@ export function Dialog({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-xs"
+            className="fixed inset-0 bg-background/70 backdrop-blur-sm"
             onClick={() => onOpenChange(false)}
             aria-hidden="true"
           />
@@ -65,7 +65,7 @@ export function Dialog({
             exit={{ opacity: 0, scale: 0.96, y: 6 }}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
             className={cn(
-              "relative z-50 w-full max-w-lg rounded-2xl border border-border/80 bg-card p-6 shadow-xl",
+              "relative z-50 w-full max-w-lg rounded-2xl border border-white/15 dark:border-white/[0.08] glass-panel p-6 shadow-[0_20px_50px_rgba(0,0,0,0.4)]",
               className,
             )}
           >

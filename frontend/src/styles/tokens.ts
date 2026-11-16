@@ -96,6 +96,22 @@ export const tokens = {
     sm: "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1)",
     md: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)",
     limeGlow: "0 0 20px -4px rgba(198, 244, 50, 0.35)",
+    glassCard: "0 4px 20px 0 rgba(0, 0, 0, 0.28)",
+    glassPanel: "0 8px 32px 0 rgba(0, 0, 0, 0.45)",
+  },
+  glass: {
+    blur: {
+      subtle: "12px",
+      card: "14px",
+      panel: "20px",
+      modal: "24px",
+    },
+    opacity: {
+      subtle: 0.55,
+      card: 0.68,
+      panel: 0.78,
+      composer: 0.85,
+    },
   },
   transitions: {
     duration: {

@@ -529,7 +529,7 @@ export function NotebookWorkspacePage() {
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden bg-background">
       {/* ─── Top Workspace Bar ────────────────────────────────────────────── */}
-      <header className="h-14 border-b border-border/80 px-4 flex items-center justify-between shrink-0 bg-card/40 backdrop-blur-md z-10">
+      <header className="h-14 border-b border-border/70 px-4 flex items-center justify-between shrink-0 glass-panel z-10">
         <div className="flex items-center gap-3 overflow-hidden">
           <Link
             to="/"
@@ -682,7 +682,7 @@ export function NotebookWorkspacePage() {
           }`}
         >
           {/* Active Chat Header */}
-          <div className="h-12 border-b border-border/60 px-4 flex items-center justify-between shrink-0 bg-card/20">
+          <div className="h-12 border-b border-border/60 px-4 flex items-center justify-between shrink-0 glass-panel-subtle">
             <div className="flex items-center gap-2 truncate">
               <Sparkles className="w-4 h-4 text-primary shrink-0" />
               <span className="text-xs font-bold text-foreground truncate">
@@ -773,8 +773,8 @@ export function NotebookWorkspacePage() {
                   <div
                     className={`space-y-2 rounded-2xl p-4 text-xs leading-relaxed max-w-[85vw] sm:max-w-xl ${
                       isUser
-                        ? "bg-primary text-primary-foreground font-medium rounded-tr-sm"
-                        : "bg-card border border-border/80 text-foreground rounded-tl-sm shadow-xs"
+                        ? "bg-primary text-primary-foreground font-medium rounded-tr-sm shadow-xs"
+                        : "glass-card text-foreground rounded-tl-sm shadow-[0_4px_20px_rgba(0,0,0,0.18)]"
                     }`}
                   >
                     {isUser ? (
@@ -811,12 +811,12 @@ export function NotebookWorkspacePage() {
                               key={cIdx}
                               type="button"
                               onClick={() => handleCitationClick(cite)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-primary/10 border border-primary/25 text-primary hover:bg-primary/20 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold glass-pill hover:scale-[1.03] active:scale-[0.98] transition-all cursor-pointer shadow-xs"
                               title={`Chunk #${cite.chunk_index}: Click to inspect source`}
                             >
-                              <span>[{cIdx + 1}]</span>
+                              <span className="font-bold">[{cIdx + 1}]</span>
                               <span className="truncate max-w-[120px]">{cite.display_title}</span>
-                              <span className="text-[9px] text-muted-foreground">p.{cite.chunk_index + 1}</span>
+                              <span className="text-[9px] opacity-80">p.{cite.chunk_index + 1}</span>
                             </button>
                           ))}
                         </div>
@@ -833,7 +833,7 @@ export function NotebookWorkspacePage() {
                 <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/30 text-primary flex items-center justify-center shrink-0">
                   <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
                 </div>
-                <div className="space-y-2 rounded-2xl p-4 text-xs leading-relaxed max-w-[85vw] sm:max-w-xl bg-card border border-border/80 text-foreground rounded-tl-sm shadow-xs">
+                <div className="space-y-2 rounded-2xl p-4 text-xs leading-relaxed max-w-[85vw] sm:max-w-xl glass-card text-foreground rounded-tl-sm shadow-[0_4px_20px_rgba(0,0,0,0.18)]">
                   <div className="flex items-center gap-1.5 pb-1.5 border-b border-border/30 text-[10px]">
                     {streamingCitations.length > 0 ? (
                       <span className="inline-flex items-center gap-1 text-primary font-semibold">
@@ -894,8 +894,8 @@ export function NotebookWorkspacePage() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Composer Box */}
-          <div className="p-3 md:p-4 border-t border-border/80 bg-card/40 backdrop-blur-sm shrink-0">
+          {/* Floating Glass Composer Box */}
+          <div className="p-3 md:p-4 border-t border-border/60 bg-transparent shrink-0">
             <form onSubmit={handleSendMessage} className="max-w-3xl mx-auto relative flex items-center">
               <input
                 type="text"
@@ -907,7 +907,7 @@ export function NotebookWorkspacePage() {
                 value={inputPrompt}
                 onChange={(e) => setInputPrompt(e.target.value)}
                 disabled={isGenerating}
-                className="w-full pl-4 pr-24 py-3 text-xs rounded-xl bg-card border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-foreground placeholder:text-muted-foreground"
+                className="w-full pl-4 pr-24 py-3.5 text-xs rounded-2xl glass-composer text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/60 transition-all shadow-[0_4px_24px_rgba(0,0,0,0.18)]"
               />
 
               <div className="absolute right-2 flex items-center gap-1">

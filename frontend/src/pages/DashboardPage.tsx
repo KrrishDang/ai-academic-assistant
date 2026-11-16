@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   MessageSquare,
   Plus,
@@ -188,15 +189,40 @@ export function DashboardPage() {
   }, [recentChats, searchQuery]);
 
   const greetingName = user?.display_name || (user?.email ? user.email.split("@")[0] : null);
+  const shouldReduceMotion = useReducedMotion();
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: shouldReduceMotion ? 0 : 0.05 },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 10 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.23, 1, 0.32, 1] } },
+  };
 
   if (!isAuthenticated && !loading) {
     return <PublicLandingPage />;
   }
 
   return (
-    <div className="space-y-8 pb-12 animate-fade-in max-w-6xl mx-auto px-4 sm:px-6">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8 pb-12 max-w-6xl mx-auto px-4 sm:px-6 relative z-10"
+    >
       {/* ── Top Hero Welcome Banner ────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-3xl bg-card border border-border/80 p-6 sm:p-8 shadow-xs">
+      <motion.div
+        variants={itemVariants}
+        className="relative overflow-hidden rounded-3xl glass-panel p-6 sm:p-8 border border-white/10 dark:border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+      >
+        <div className="absolute -right-24 -top-24 w-80 h-80 bg-primary/10 dark:bg-primary/[0.08] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-primary/5 dark:bg-primary/[0.04] rounded-full blur-2xl pointer-events-none" />
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold text-primary uppercase tracking-wider">
@@ -251,7 +277,7 @@ export function DashboardPage() {
             </Button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Error State / Creation Failure Recovery Banner ─────────── */}
       {creationError && (
@@ -383,10 +409,11 @@ export function DashboardPage() {
           </div>
         ) : (
           /* Recent Chats Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredChats.map((chat) => (
-              <div
+              <motion.div
                 key={chat.conversationId || chat.notebookId}
+                whileHover={shouldReduceMotion ? {} : { y: -3, transition: { duration: 0.18 } }}
                 role="button"
                 tabIndex={0}
                 onClick={() => handleOpenChat(chat)}
@@ -396,7 +423,7 @@ export function DashboardPage() {
                     handleOpenChat(chat);
                   }
                 }}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-5 hover:border-primary/50 hover:shadow-sm transition-all cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="group relative flex flex-col justify-between rounded-2xl glass-card-interactive p-5 cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -422,18 +449,18 @@ export function DashboardPage() {
                   </span>
                   <span className="inline-flex items-center gap-1 font-semibold text-foreground group-hover:text-primary transition-colors">
                     <span>Open</span>
-                    <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                    <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </div>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* ── Optional Quick Resume for Existing Course Workspaces ──── */}
       {recentNotebooks.length > 0 && (
-        <div className="space-y-3 pt-2">
+        <motion.div variants={itemVariants} className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Resume Course Workspace
@@ -450,7 +477,7 @@ export function DashboardPage() {
               />
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Edit Workspace Modal */}
@@ -468,6 +495,6 @@ export function DashboardPage() {
         notebook={deletingNotebook}
         onConfirm={handleDeleteConfirm}
       />
-    </div>
+    </motion.div>
   );
 }

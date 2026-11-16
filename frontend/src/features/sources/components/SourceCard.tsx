@@ -58,8 +58,8 @@ export function SourceCard({
       aria-label={`Source: ${source.display_title}`}
       className={`group relative p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
         isHighlighted
-          ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-xs"
-          : "border-border/70 bg-card/70 hover:border-border hover:bg-card hover:shadow-xs"
+          ? "border-primary bg-primary/10 ring-2 ring-primary/30 shadow-[0_0_15px_rgba(198,244,50,0.2)]"
+          : "glass-card-interactive hover:border-primary/40"
       }`}
       onClick={() => onView(source)}
     >

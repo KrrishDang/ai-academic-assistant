@@ -113,10 +113,16 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div
       className={cn(
-        "bg-background text-foreground flex overflow-x-hidden selection:bg-[#C6F432]/30 selection:text-[#0B0B0C] dark:selection:text-[#C6F432]",
+        "bg-background text-foreground flex overflow-x-hidden selection:bg-[#C6F432]/30 selection:text-[#0B0B0C] dark:selection:text-[#C6F432] relative",
         isEdgeToEdgeWorkspace ? "h-screen max-h-screen overflow-hidden" : "min-h-screen",
       )}
     >
+      {/* ─── Ambient Lighting & Visual Depth Layer ─────────────────── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 left-1/3 w-[600px] h-[350px] bg-primary/[0.05] dark:bg-primary/[0.035] blur-[130px] rounded-full" />
+        <div className="absolute bottom-10 right-10 w-[450px] h-[350px] bg-primary/[0.04] dark:bg-primary/[0.025] blur-[120px] rounded-full" />
+      </div>
+
       {/* ─── 1. Desktop Persistent Sidebar (>= 1024px) ────────────────── */}
       <div
         className={cn(

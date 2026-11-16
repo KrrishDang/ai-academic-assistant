@@ -572,7 +572,7 @@ export function StudyStudioPanel({
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden bg-card/20 select-none">
       {/* ─── Studio Header Bar (Fixed / Pinned) ────────────────────── */}
-      <div className="p-3.5 border-b border-border/60 shrink-0 flex items-center justify-between bg-card/40 backdrop-blur-sm">
+      <div className="p-3.5 border-b border-border/60 shrink-0 flex items-center justify-between glass-panel-subtle backdrop-blur-md">
         <div className="flex items-center gap-2 truncate">
           <GraduationCap className="w-4 h-4 text-primary shrink-0" />
           <div className="min-w-0">
@@ -642,7 +642,7 @@ export function StudyStudioPanel({
         {activeTool && (
           <div className="space-y-4 animate-in fade-in duration-150">
             {/* Tool Status & Controls Banner */}
-            <div className="p-3 rounded-xl border border-border/70 bg-card/60 flex items-center justify-between gap-2 shadow-xs">
+            <div className="p-3 rounded-xl glass-card flex items-center justify-between gap-2 shadow-xs">
               <div className="flex items-center gap-2 min-w-0">
                 <activeTool.icon className="w-4 h-4 text-primary shrink-0" />
                 <div className="truncate">
@@ -875,7 +875,7 @@ export function StudyStudioPanel({
 
                 <div
                   onClick={() => setCardDeckFlipped((p) => !p)}
-                  className="min-h-[180px] p-6 rounded-2xl border border-border/80 bg-card/60 shadow-md flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-all duration-200"
+                  className="min-h-[190px] p-6 rounded-2xl glass-card shadow-[0_8px_30px_rgba(0,0,0,0.25)] flex flex-col items-center justify-center cursor-pointer hover:border-primary/60 hover:shadow-[0_8px_32px_rgba(0,0,0,0.35),0_0_20px_rgba(198,244,50,0.15)] transition-all duration-300 transform active:scale-[0.985]"
                 >
                   <span className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2">
                     {cardDeckFlipped ? "Answer" : "Question (Click to flip)"}
@@ -1271,7 +1271,7 @@ export function StudyStudioPanel({
                       key={tool.id}
                       type="button"
                       onClick={() => runStudioTool(tool)}
-                      className="p-3 rounded-xl border border-border/80 bg-card/60 hover:bg-card hover:border-primary/50 text-left transition-all duration-150 group flex items-start justify-between cursor-pointer shadow-xs"
+                      className="p-3 rounded-xl glass-card-interactive text-left group flex items-start justify-between cursor-pointer shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/40"
                     >
                       <div className="space-y-1 flex-1 pr-2">
                         <div className="flex items-center gap-2">

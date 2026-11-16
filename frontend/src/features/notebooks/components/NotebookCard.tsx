@@ -31,7 +31,7 @@ export function NotebookCard({ notebook, onOpen, onEdit, onDelete }: NotebookCar
           onOpen(notebook.id);
         }
       }}
-      className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-card p-5 text-card-foreground shadow-xs transition-all duration-150 ease-out hover:border-primary/60 hover:bg-muted/20 active:scale-[0.985] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background"
+      className="group relative flex flex-col justify-between rounded-2xl glass-card-interactive p-5 text-card-foreground cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-background"
     >
       {/* Top Header Row */}
       <div className="space-y-3">

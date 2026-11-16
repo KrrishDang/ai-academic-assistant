@@ -80,9 +80,30 @@ export function PublicLandingPage() {
         className="fixed inset-0 pointer-events-none z-0 overflow-hidden"
         aria-hidden="true"
       >
-        <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] bg-gradient-to-b from-[#C6F432]/12 via-[#C6F432]/4 to-transparent blur-[120px] rounded-full" />
-        <div className="absolute top-[40%] -right-40 w-[400px] h-[400px] bg-[#C6F432]/5 blur-[100px] rounded-full" />
-        <div className="absolute bottom-[20%] -left-40 w-[500px] h-[500px] bg-[#C6F432]/5 blur-[120px] rounded-full" />
+        <motion.div
+          animate={shouldReduceMotion ? {} : {
+            scale: [1, 1.08, 1],
+            opacity: [0.12, 0.17, 0.12],
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[450px] bg-gradient-to-b from-[#C6F432]/14 via-[#C6F432]/5 to-transparent blur-[120px] rounded-full"
+        />
+        <motion.div
+          animate={shouldReduceMotion ? {} : {
+            x: [0, 15, 0],
+            y: [0, -15, 0],
+          }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[35%] -right-40 w-[450px] h-[450px] bg-[#C6F432]/6 blur-[110px] rounded-full"
+        />
+        <motion.div
+          animate={shouldReduceMotion ? {} : {
+            x: [0, -15, 0],
+            y: [0, 15, 0],
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[20%] -left-40 w-[500px] h-[500px] bg-[#C6F432]/6 blur-[120px] rounded-full"
+        />
       </div>
 
       {/* ─── Top Public Navigation Bar ───────────────────────────────────── */}
@@ -175,7 +196,7 @@ export function PublicLandingPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.08]"
+          className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight text-white max-w-4xl mx-auto leading-[1.12]"
         >
           Master your courses with AI that{" "}
           <span className="text-[#C6F432] relative inline-block">

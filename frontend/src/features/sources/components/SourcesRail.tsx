@@ -90,7 +90,7 @@ export function SourcesRail({
 
   return (
     <aside
-      className={`w-full lg:w-80 shrink-0 border-r border-border/80 flex flex-col bg-card/25 overflow-hidden ${className}`}
+      className={`w-full lg:w-80 shrink-0 border-r border-border/70 flex flex-col glass-panel-subtle overflow-hidden ${className}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -98,7 +98,7 @@ export function SourcesRail({
       {/* ─── Sources Section (Top / Flex-1) ─────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-h-0 border-b border-border/60">
         {/* Sources Header */}
-        <div className="p-3.5 pb-2.5 flex items-center justify-between border-b border-border/40 shrink-0 bg-card/40">
+        <div className="p-3.5 pb-2.5 flex items-center justify-between border-b border-border/40 shrink-0 bg-card/40 backdrop-blur-md">
           <div className="flex items-center gap-2">
             <span className="p-1 rounded-md bg-primary/10 text-primary">
               <FileText className="w-4 h-4 text-primary" />
