@@ -473,6 +473,6 @@ This project is open-source software licensed under the MIT License.
 
 ## 15. Author & Acknowledgements
 
-Created and engineered by **Krrish Dang** ([@KrrishDang](https://github.com/KrrishDang)) , **Ishank Batra** ([@Ishank-Batra](https://github.com/Ishank-Batra)).
+Created and engineered by **Krrish Dang** ([@KrrishDang](https://github.com/KrrishDang)), **Ishank Batra** ([@Ishank-Batra](https://github.com/Ishank-Batra)), **Shaurya Saraswat** ([@ShauryaSaraswat4888](https://github.com/ShauryaSaraswat4888)).
 
 Special thanks to the Google Gemini team for generative AI capabilities and the open-source community for FastAPI, React, and Tailwind CSS.
